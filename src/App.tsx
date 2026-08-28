@@ -6,6 +6,7 @@ import AppMark from './components/AppMark';
 import Home from './pages/Home';
 import NewTemplate from './pages/NewTemplate';
 import Projects from './pages/Projects';
+import Review from './pages/Review';
 import Explorer from './pages/Explorer';
 import Docs from './pages/Docs';
 import About from './pages/About';
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/new" element={<NewTemplate />} />
           <Route path="/new/:projectId" element={<NewTemplate />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/review/:projectId" element={<Review />} />
           <Route path="/explorer" element={<Explorer />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/about" element={<About />} />

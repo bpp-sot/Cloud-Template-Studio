@@ -5,8 +5,10 @@
 // engines and every review artifact read ONLY from the InternalModel, so
 // generated templates and learner instructions cannot drift apart (Brief §15).
 //
-// This is deterministic: logical ids are derived from stable names/indices, not
-// random, so generated output can be snapshot-tested via fixtures.
+// Azure uses a dedicated builder that attaches concrete resource configuration
+// (see azure-model.ts). AWS uses the generic builder below until its dedicated
+// builder lands in Phase 3. Both are deterministic so output can be
+// snapshot-tested via fixtures.
 
 import type {
   CloudProvider,
@@ -19,8 +21,10 @@ import type {
   ReviewFinding,
   ResourceCatalogueEntry,
 } from '@/types';
-import { findComputeSize, findResource, securityRules, costRules } from '@/lib/data';
+import { findComputeSize, findResource } from '@/lib/data';
 import { evidenceRefFromId, resolveDependencies } from './dependencies';
+import { findingFromCostRule, findingFromSecurityRule } from './findings';
+import { buildAzureModel } from './azure-model';
 
 /** The primary catalogue resource id used for a single compute unit, per provider. */
 const PRIMARY_COMPUTE_ID: Record<CloudProvider, string> = {
@@ -51,53 +55,13 @@ function optedInDependencies(
 ): Set<string> {
   const opts = new Set<string>();
   if (compute.publicIpRequested) {
-    if (provider === 'azure') opts.add('azure-public-ip');
     if (provider === 'aws') {
       opts.add('aws-internet-gateway');
       opts.add('aws-route-table');
     }
   }
-  if (
-    provider === 'azure' &&
-    spec.providerConfig.kind === 'azure' &&
-    spec.providerConfig.azure.bootDiagnosticsEnabled
-  ) {
-    opts.add('azure-diagnostics-storage');
-  }
+  void spec;
   return opts;
-}
-
-function findingFromSecurityRule(
-  id: string,
-  affectedResource: string | undefined,
-  extra?: Partial<ReviewFinding>,
-): ReviewFinding | null {
-  const rule = securityRules.find((r) => r.id === id);
-  if (!rule) return null;
-  return {
-    id: `${id}:${affectedResource ?? 'general'}`,
-    kind: 'security',
-    severity: rule.severity,
-    category: rule.category,
-    description: rule.description,
-    recommendation: rule.recommendation,
-    affectedResource,
-    ...extra,
-  };
-}
-
-function findingFromCostRule(id: string, affectedResource?: string): ReviewFinding | null {
-  const rule = costRules.find((r) => r.id === id);
-  if (!rule) return null;
-  return {
-    id: `${id}:${affectedResource ?? 'general'}`,
-    kind: 'cost',
-    severity: 'info',
-    category: rule.category,
-    description: rule.description,
-    recommendation: `${rule.guidance} Pricing calculator: ${rule.pricingCalculatorUrl}`,
-    affectedResource,
-  };
 }
 
 function buildComputeResources(
@@ -190,7 +154,8 @@ function buildComputeResources(
   return { resources, findings };
 }
 
-export function buildInternalModel(spec: LabSpecification): InternalModel {
+/** Generic builder used for AWS (Phase 3 will introduce a dedicated AWS builder). */
+function buildGenericModel(spec: LabSpecification): InternalModel {
   const provider = spec.provider;
   const resources: GeneratedResource[] = [];
   const findings: ReviewFinding[] = [];
@@ -216,12 +181,13 @@ export function buildInternalModel(spec: LabSpecification): InternalModel {
         if (f)
           findings.push({
             ...f,
+            id: `${f.id}:${rule.port}`,
             description: `${f.description} (port ${rule.port} on ${net.name})`,
           });
       }
       if ((rule.port === 22 || rule.port === 3389) && rule.sourceCidr.trim() === '0.0.0.0/0') {
         const f = findingFromSecurityRule('sec-mgmt-port', net.name);
-        if (f) findings.push(f);
+        if (f) findings.push({ ...f, id: `${f.id}:${rule.port}` });
       }
     }
   }
@@ -257,7 +223,7 @@ export function buildInternalModel(spec: LabSpecification): InternalModel {
       : [];
 
   if (parameters.some((p) => p.secure)) {
-    const f: ReviewFinding = {
+    findings.push({
       id: 'secure-input:adminAuthSecret',
       kind: 'security',
       severity: 'info',
@@ -265,9 +231,13 @@ export function buildInternalModel(spec: LabSpecification): InternalModel {
       description: 'Administrative credentials are declared as a secure parameter, not embedded.',
       recommendation: 'Supply the value at deployment time. Never commit secrets to the template.',
       evidence: evidenceRefFromId('safety-secure-input'),
-    };
-    findings.push(f);
+    });
   }
 
   return { provider, resources, parameters, outputs: [], findings };
+}
+
+export function buildInternalModel(spec: LabSpecification): InternalModel {
+  if (spec.provider === 'azure') return buildAzureModel(spec);
+  return buildGenericModel(spec);
 }

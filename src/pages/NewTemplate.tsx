@@ -1,112 +1,138 @@
-import { useState } from 'react';
+// New Template wizard — Development Brief §7.
+//
+// Hosts the guided wizard inside a WizardProvider. On Generate, builds the
+// provider InternalModel, renders artifacts, persists the project, and
+// navigates to the review page.
+
 import { useNavigate, useParams } from 'react-router-dom';
-import type { CloudProvider } from '@/types';
-import { createEmptyProject } from '@/lib/model/factory';
+import { WizardProvider, useWizard } from '@/lib/wizard-context';
 import { saveProject, loadProject } from '@/lib/storage';
-import { detectSecrets } from '@/lib/secret-detector';
+import { generateArtifacts } from '@/lib/generate';
+import type { TemplateProject } from '@/types';
+import { WIZARD_STEPS, canProceed } from '@/components/WizardSteps';
 
-export default function NewTemplate() {
+function WizardContent({ existing }: { existing: TemplateProject | null }) {
+  const { wizard, setWizard, projectId, reset } = useWizard();
   const navigate = useNavigate();
-  const { projectId } = useParams();
-  const existing = projectId ? loadProject(projectId) : null;
 
-  const [provider, setProvider] = useState<CloudProvider>(
-    existing?.wizard.spec.provider ?? 'azure',
-  );
-  const [projectName, setProjectName] = useState(existing?.wizard.spec.metadata.projectName ?? '');
-  const [secretWarning, setSecretWarning] = useState<string | null>(null);
+  const currentStep = wizard.currentStep;
+  const StepComponent = WIZARD_STEPS[currentStep].component;
 
-  const handleCreate = () => {
-    const result = detectSecrets(projectName);
-    if (result.detected) {
-      setSecretWarning(result.warnings.join(' '));
-      return;
+  const next = () => {
+    if (currentStep < WIZARD_STEPS.length - 1) {
+      setWizard((prev) => ({ ...prev, currentStep: prev.currentStep + 1 }));
     }
-    const project = existing ?? createEmptyProject(provider);
-    project.wizard.spec.provider = provider;
-    // Keep provider config aligned with the chosen provider.
-    if (provider !== project.wizard.spec.providerConfig.kind) {
-      const fresh = createEmptyProject(provider);
-      project.wizard.spec.providerConfig = fresh.wizard.spec.providerConfig;
+  };
+
+  const prev = () => {
+    if (currentStep > 0) {
+      setWizard((prev) => ({ ...prev, currentStep: prev.currentStep - 1 }));
     }
-    project.wizard.spec.metadata.projectName = projectName || 'Untitled Template';
+  };
+
+  const handleSaveDraft = () => {
+    const project: TemplateProject = existing
+      ? { ...existing, updatedAt: new Date().toISOString(), wizard }
+      : {
+          id: projectId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          wizard,
+        };
     saveProject(project);
     navigate('/projects');
   };
 
+  const handleGenerate = () => {
+    try {
+      const artifacts = generateArtifacts(wizard.spec);
+      const now = new Date().toISOString();
+      const project: TemplateProject = existing
+        ? { ...existing, updatedAt: now, wizard, artifacts }
+        : { id: projectId, createdAt: now, updatedAt: now, wizard, artifacts };
+      saveProject(project);
+      navigate(`/review/${projectId}`);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to generate templates.');
+    }
+  };
+
   return (
-    <div>
-      <div className="mb-6">
+    <div className="wizard-container">
+      <div className="flex items-center justify-between">
         <h2 className="section-title">
           {existing ? 'Edit Template Project' : 'New Template Project'}
         </h2>
-        <p className="section-subtitle">
-          Start by naming the project and choosing a cloud provider. The full guided wizard
-          (compute, networking, storage, identity, initialisation and generation) is delivered in
-          the upcoming phases.
-        </p>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => {
+            if (confirm('Reset the wizard? All current data will be lost.')) {
+              reset(wizard.spec.provider);
+            }
+          }}
+        >
+          Reset
+        </button>
       </div>
 
-      <div className="card">
-        <div className="card-header">Template Project</div>
-
-        <div className="form-group">
-          <label className="form-label" htmlFor="projectName">
-            Project name
-          </label>
-          <input
-            id="projectName"
-            className="form-input"
-            value={projectName}
-            onChange={(e) => {
-              setProjectName(e.target.value);
-              setSecretWarning(null);
-            }}
-            placeholder="e.g. Azure Linux VM Lab"
-          />
-        </div>
-
-        <div className="form-group">
-          <span className="form-label">Cloud provider</span>
-          <div className="flex gap-3 mt-2">
-            <button
-              type="button"
-              className={`btn ${provider === 'azure' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setProvider('azure')}
+      <div className="wizard-progress">
+        {WIZARD_STEPS.map((step, idx) => (
+          <div key={idx} className="flex items-center">
+            <div
+              className={`wizard-step ${idx === currentStep ? 'active' : ''} ${idx < currentStep ? 'completed' : ''}`}
             >
-              Microsoft Azure
-            </button>
-            <button
-              type="button"
-              className={`btn ${provider === 'aws' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setProvider('aws')}
-            >
-              Amazon Web Services
-            </button>
+              <div className="wizard-step-circle">{idx < currentStep ? '\u2713' : idx + 1}</div>
+              <div className="wizard-step-label">{step.label}</div>
+            </div>
+            {idx < WIZARD_STEPS.length - 1 && <div className="wizard-step-connector" />}
           </div>
-          <p className="text-sm text-muted mt-2">
-            {provider === 'azure'
-              ? 'Azure outputs Bicep and ARM JSON. Deployment container: Resource Group.'
-              : 'AWS outputs CloudFormation (YAML by default, JSON where appropriate). Deployment container: CloudFormation Stack.'}
-          </p>
-          <p className="text-sm text-muted mt-2">
-            Azure and AWS templates are not one-to-one interchangeable; each uses its native model.
-          </p>
-        </div>
+        ))}
+      </div>
 
-        {secretWarning && (
-          <div className="alert alert-danger">
-            <span>{'\u{26A0}'}</span>
-            <div>{secretWarning}</div>
-          </div>
-        )}
+      <StepComponent />
 
-        <div className="flex gap-2 mt-4">
-          <button className="btn btn-primary" onClick={handleCreate}>
-            {existing ? 'Save Project' : 'Create Project'}
+      <div className="wizard-actions">
+        <button className="btn btn-secondary" onClick={prev} disabled={currentStep === 0}>
+          {'\u2190'} Previous
+        </button>
+        <div className="flex gap-2">
+          <button className="btn btn-secondary" onClick={handleSaveDraft}>
+            Save Draft
           </button>
+          {currentStep < WIZARD_STEPS.length - 1 ? (
+            <button
+              className="btn btn-primary"
+              onClick={next}
+              disabled={!canProceed(currentStep, wizard.spec)}
+            >
+              Next {'\u2192'}
+            </button>
+          ) : (
+            <button className="btn btn-primary" onClick={handleGenerate}>
+              Generate Templates {'\u{1F680}'}
+            </button>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NewTemplate() {
+  const { projectId } = useParams();
+  const existing = projectId ? loadProject(projectId) : null;
+
+  if (existing) {
+    return (
+      <WizardProvider initial={existing.wizard} projectId={existing.id}>
+        <WizardContent existing={existing} />
+      </WizardProvider>
+    );
+  }
+
+  return (
+    <WizardProvider>
+      <WizardContent existing={null} />
+    </WizardProvider>
   );
 }
