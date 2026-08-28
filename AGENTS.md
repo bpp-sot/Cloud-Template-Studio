@@ -39,13 +39,22 @@ directly. This keeps templates and instructions from drifting apart.
 - `src/types/` — domain model: `evidence.ts`, `lab-specification.ts`, `catalogue.ts`,
   `internal-model.ts`, `project.ts` (barrel: `index.ts`).
 - `src/data/` — normalised evidence catalogues (JSON): resource catalogues, patterns, regions,
-  compute sizes, security/cost/naming rules, evidence index, source manifest.
+  compute sizes, security/cost/naming rules, evidence index, source manifest, images.
 - `src/data-schemas/` — JSON Schemas validated in unit tests.
 - `src/lib/` — `data.ts` (typed catalogue access), `model/factory.ts`, `normalise/` (dependency
-  engine + normaliser), `storage.ts`, `secret-detector.ts`, `theme.tsx`, `download.ts`,
-  `app-info.ts`.
+  engine + normaliser + azure-model + aws-model), `generators/azure/` (bicep, arm, parameters),
+  `generators/aws/` (cloudformation-yaml, cloudformation-json, parameters), `instructions.ts`
+  (learner Markdown), `checklist.ts` (validation checklist), `storage.ts`, `secret-detector.ts`,
+  `theme.tsx`, `download.ts`, `app-info.ts`.
 - `src/components/`, `src/pages/` — UI.
 - `e2e/` — Playwright specs.
+
+## Generator Independence
+
+Azure Bicep and ARM are generated independently from the same `InternalModel` — ARM is NOT
+compiled from Bicep. Likewise, AWS CloudFormation YAML and JSON are generated independently
+from the same `InternalModel` — JSON is NOT converted from YAML. Equivalence is asserted by
+fixture-based snapshot tests.
 
 ## Non-negotiable Principles
 
