@@ -16,7 +16,7 @@ import type {
   OutputDef,
   ReviewFinding,
 } from '@/types';
-import { findComputeSize, findResource } from '@/lib/data';
+import { findComputeSize, findResource, findAzureImage } from '@/lib/data';
 import { evidenceRefFromId, resolveDependencies } from './dependencies';
 import { findingFromCostRule, findingFromSecurityRule } from './findings';
 import type {
@@ -112,8 +112,19 @@ function buildCompute(
 
   const azureCfg = spec.providerConfig.kind === 'azure' ? spec.providerConfig.azure : null;
   const bootDiagnostics = azureCfg?.bootDiagnosticsEnabled ?? false;
-  const image = azureCfg?.imageReference ?? defaultImage(compute.osFamily);
-  const usingDefaultImage = !azureCfg?.imageReference;
+  // Resolve image: explicit imageReference > imageId from catalogue > default.
+  const catalogueImage = azureCfg?.imageId ? findAzureImage(azureCfg.imageId) : null;
+  const image =
+    azureCfg?.imageReference ??
+    (catalogueImage
+      ? {
+          publisher: catalogueImage.publisher,
+          offer: catalogueImage.offer,
+          sku: catalogueImage.sku,
+          version: catalogueImage.version,
+        }
+      : defaultImage(compute.osFamily));
+  const usingDefaultImage = !azureCfg?.imageReference && !catalogueImage;
 
   const optedIn = new Set<string>();
   if (compute.publicIpRequested) optedIn.add('azure-public-ip');

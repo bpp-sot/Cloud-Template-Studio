@@ -21,6 +21,7 @@ export function emptyProviderConfig(provider: CloudProvider): ProviderConfig {
       azure: {
         resourceGroupName: '',
         imageReference: null,
+        imageId: null,
         bootDiagnosticsEnabled: false,
       },
     };
@@ -30,6 +31,7 @@ export function emptyProviderConfig(provider: CloudProvider): ProviderConfig {
     aws: {
       stackName: '',
       amiStrategy: 'ssm-parameter',
+      imageId: null,
       ssmParameterName: null,
       explicitAmiId: null,
       keyPairStrategy: 'none',

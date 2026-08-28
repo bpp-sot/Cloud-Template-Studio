@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import { useWizard } from '@/lib/wizard-context';
 import { detectSecrets } from '@/lib/secret-detector';
-import { getRegions, getComputeSizes } from '@/lib/data';
+import { getRegions, getComputeSizes, getAzureImages, getAwsImages } from '@/lib/data';
 import { generateId } from '@/lib/model/factory';
 import type {
   ArchitecturePatternId,
@@ -256,8 +256,8 @@ export function Step2Provider() {
         <div className="alert alert-info mt-4">
           <span>{'\u{2139}'}</span>
           <div>
-            AWS CloudFormation generation is delivered in Phase 3. You can capture the lab
-            specification now; template generation for AWS will be available in a later release.
+            AWS generates CloudFormation YAML and JSON plus a parameters file. AMI references use
+            SSM public parameter aliases by default, which are region-independent.
           </div>
         </div>
       )}
@@ -1121,6 +1121,10 @@ export function Step9Initialization() {
   const init = wizard.spec.initialisation[0];
   const azureCfg =
     wizard.spec.providerConfig.kind === 'azure' ? wizard.spec.providerConfig.azure : null;
+  const awsCfg = wizard.spec.providerConfig.kind === 'aws' ? wizard.spec.providerConfig.aws : null;
+  const osFamily = wizard.spec.compute[0]?.osFamily ?? 'linux';
+  const azureImages = getAzureImages().filter((i) => i.osFamily === osFamily);
+  const awsImages = getAwsImages().filter((i) => i.osFamily === osFamily);
 
   const ensureInit = () => {
     if (init) return init;
@@ -1147,6 +1151,37 @@ export function Step9Initialization() {
       return {
         ...spec,
         initialisation: list.map((i, idx) => (idx === 0 ? { ...i, ...patch } : i)),
+      };
+    });
+  };
+
+  const setAzureImage = (imageId: string | null) => {
+    patchSpec((spec) => {
+      if (spec.providerConfig.kind !== 'azure') return spec;
+      return {
+        ...spec,
+        providerConfig: {
+          kind: 'azure',
+          azure: { ...spec.providerConfig.azure, imageId, imageReference: null },
+        },
+      };
+    });
+  };
+
+  const setAwsImage = (imageId: string | null) => {
+    patchSpec((spec) => {
+      if (spec.providerConfig.kind !== 'aws') return spec;
+      return {
+        ...spec,
+        providerConfig: {
+          kind: 'aws',
+          aws: {
+            ...spec.providerConfig.aws,
+            imageId,
+            amiStrategy: 'ssm-parameter',
+            explicitAmiId: null,
+          },
+        },
       };
     });
   };
@@ -1186,13 +1221,26 @@ export function Step9Initialization() {
               />
             </div>
 
-            <div className="alert alert-info mt-2">
-              <span>{'\u{2139}'}</span>
-              <div>
-                If no image reference is supplied, a default{' '}
-                {wizard.spec.compute[0]?.osFamily ?? 'linux'} image is applied and flagged as an
-                application-generated default (Classification E). Review and change it if a specific
-                image is required.
+            <div className="form-group">
+              <label className="form-label">Operating System Image</label>
+              <select
+                className="form-select"
+                value={azureCfg.imageId ?? ''}
+                onChange={(e) => setAzureImage(e.target.value || null)}
+              >
+                <option value="">
+                  Default {osFamily} image (application-generated, Classification E)
+                </option>
+                {azureImages.map((img) => (
+                  <option key={img.id} value={img.id}>
+                    {img.displayName}
+                  </option>
+                ))}
+              </select>
+              <div className="form-hint">
+                Curated image references from the Azure Marketplace. Selecting one sets the
+                publisher/offer/sku on the VM. The default is flagged as an application-generated
+                default (Classification E) and should be reviewed.
               </div>
             </div>
 
@@ -1229,14 +1277,111 @@ export function Step9Initialization() {
           </>
         )}
 
-        {provider === 'aws' && (
-          <div className="alert alert-info">
-            <span>{'\u{2139}'}</span>
-            <div>
-              AWS provider options (AMI strategy, key pair) are captured now but CloudFormation
-              generation is delivered in Phase 3.
+        {provider === 'aws' && awsCfg && (
+          <>
+            <div className="form-group">
+              <label className="form-label">CloudFormation Stack Name</label>
+              <input
+                className="form-input"
+                value={awsCfg.stackName}
+                onChange={(e) => {
+                  const detection = detectSecrets(e.target.value);
+                  if (detection.detected) {
+                    alert(detection.warnings.join('\n'));
+                    return;
+                  }
+                  patchSpec((spec) => {
+                    if (spec.providerConfig.kind !== 'aws') return spec;
+                    return {
+                      ...spec,
+                      providerConfig: {
+                        kind: 'aws',
+                        aws: { ...spec.providerConfig.aws, stackName: e.target.value },
+                      },
+                    };
+                  });
+                }}
+                placeholder="e.g. lab-stack"
+              />
             </div>
-          </div>
+
+            <div className="form-group">
+              <label className="form-label">AMI / Operating System Image</label>
+              <select
+                className="form-select"
+                value={awsCfg.imageId ?? ''}
+                onChange={(e) => setAwsImage(e.target.value || null)}
+              >
+                <option value="">Default {osFamily} AMI (SSM parameter, Classification E)</option>
+                {awsImages.map((img) => (
+                  <option key={img.id} value={img.id}>
+                    {img.displayName}
+                  </option>
+                ))}
+              </select>
+              <div className="form-hint">
+                SSM public parameter aliases are preferred over hard-coded AMI ids because they are
+                region-independent and always resolve to a current image. The default is flagged as
+                an application-generated default (Classification E).
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Key Pair Strategy</label>
+              <select
+                className="form-select"
+                value={awsCfg.keyPairStrategy}
+                onChange={(e) =>
+                  patchSpec((spec) => {
+                    if (spec.providerConfig.kind !== 'aws') return spec;
+                    return {
+                      ...spec,
+                      providerConfig: {
+                        kind: 'aws',
+                        aws: {
+                          ...spec.providerConfig.aws,
+                          keyPairStrategy: e.target.value as 'existing-name' | 'none',
+                        },
+                      },
+                    };
+                  })
+                }
+              >
+                <option value="none">
+                  None (use SSM Session Manager or supply at deploy time)
+                </option>
+                <option value="existing-name">Reference an existing key pair name</option>
+              </select>
+              {awsCfg.keyPairStrategy === 'existing-name' && (
+                <input
+                  className="form-input mt-2"
+                  value={awsCfg.keyPairName ?? ''}
+                  onChange={(e) => {
+                    const detection = detectSecrets(e.target.value);
+                    if (detection.detected) {
+                      alert(detection.warnings.join('\n'));
+                      return;
+                    }
+                    patchSpec((spec) => {
+                      if (spec.providerConfig.kind !== 'aws') return spec;
+                      return {
+                        ...spec,
+                        providerConfig: {
+                          kind: 'aws',
+                          aws: { ...spec.providerConfig.aws, keyPairName: e.target.value },
+                        },
+                      };
+                    });
+                  }}
+                  placeholder="e.g. lab-keypair"
+                />
+              )}
+              <div className="form-hint">
+                The private key is never stored in the template or the project. Only the key pair
+                name is referenced.
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -1366,11 +1511,11 @@ export function Step10Review() {
       </div>
 
       {spec.provider === 'aws' && (
-        <div className="alert alert-warning mt-2">
-          <span>{'\u{26A0}'}</span>
+        <div className="alert alert-info mt-2">
+          <span>{'\u{2139}'}</span>
           <div>
-            AWS CloudFormation generation is delivered in Phase 3. The project will be saved with
-            the specification intact, but no AWS templates will be generated yet.
+            AWS CloudFormation YAML and JSON will be generated from this specification. Review the
+            output on the review page.
           </div>
         </div>
       )}

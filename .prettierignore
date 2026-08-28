@@ -6,3 +6,4 @@ test-results/
 .sync-temp/
 *.min.js
 package-lock.json
+**/__snapshots__/**

@@ -1,0 +1,120 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "SoT Cloud Template Studio 0.1.0 — generated independently from the InternalModel. Test in a non-production environment before Skillable use.",
+  "Metadata": {
+    "_generator": {
+      "name": "SoT Cloud Template Studio",
+      "version": "0.1.0"
+    },
+    "_note": "Generated independently from the InternalModel (not converted from YAML). Test in a non-production environment before Skillable use."
+  },
+  "Parameters": {
+    "AdminUsername": {
+      "Type": "String",
+      "Description": "Administrative username for the EC2 instance.",
+      "Default": "ec2-user"
+    },
+    "AdminAuthSecret": {
+      "Type": "String",
+      "Description": "Administrative password or key material, supplied at deployment time. Never stored in the template.",
+      "NoEcho": true
+    }
+  },
+  "Resources": {
+    "lab-instance-vpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "lab-instance-vpc"
+          }
+        ]
+      }
+    },
+    "lab-instance-subnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "lab-instance-vpc"
+        },
+        "CidrBlock": "10.0.0.0/24",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "lab-instance-subnet"
+          }
+        ]
+      }
+    },
+    "lab-instance-sg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for lab-instance",
+        "VpcId": {
+          "Ref": "lab-instance-vpc"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 22,
+            "ToPort": 22,
+            "CidrIp": "203.0.113.0/24",
+            "Description": "SSH from lab range"
+          }
+        ],
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "-1",
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Default outbound egress"
+          }
+        ]
+      }
+    },
+    "lab-instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "InstanceType": "t3.small",
+        "ImageId": "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64}}",
+        "SubnetId": {
+          "Ref": "lab-instance-subnet"
+        },
+        "SecurityGroupIds": [
+          {
+            "Ref": "lab-instance-sg"
+          }
+        ],
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "VolumeType": "gp3",
+              "VolumeSize": 30,
+              "Encrypted": true,
+              "DeleteOnTermination": true
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "lab-instance"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "lab-instanceInstanceId": {
+      "Value": {
+        "Ref": "lab-instance"
+      },
+      "Description": "ID of the EC2 instance."
+    }
+  }
+}

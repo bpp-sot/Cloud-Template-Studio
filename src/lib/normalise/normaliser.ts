@@ -5,10 +5,9 @@
 // engines and every review artifact read ONLY from the InternalModel, so
 // generated templates and learner instructions cannot drift apart (Brief §15).
 //
-// Azure uses a dedicated builder that attaches concrete resource configuration
-// (see azure-model.ts). AWS uses the generic builder below until its dedicated
-// builder lands in Phase 3. Both are deterministic so output can be
-// snapshot-tested via fixtures.
+// Azure and AWS each have a dedicated builder that attaches concrete resource
+// configuration (see azure-model.ts / aws-model.ts). Both are deterministic so
+// output can be snapshot-tested via fixtures.
 
 import type {
   CloudProvider,
@@ -25,6 +24,7 @@ import { findComputeSize, findResource } from '@/lib/data';
 import { evidenceRefFromId, resolveDependencies } from './dependencies';
 import { findingFromCostRule, findingFromSecurityRule } from './findings';
 import { buildAzureModel } from './azure-model';
+import { buildAwsModel } from './aws-model';
 
 /** The primary catalogue resource id used for a single compute unit, per provider. */
 const PRIMARY_COMPUTE_ID: Record<CloudProvider, string> = {
@@ -239,5 +239,6 @@ function buildGenericModel(spec: LabSpecification): InternalModel {
 
 export function buildInternalModel(spec: LabSpecification): InternalModel {
   if (spec.provider === 'azure') return buildAzureModel(spec);
+  if (spec.provider === 'aws') return buildAwsModel(spec);
   return buildGenericModel(spec);
 }

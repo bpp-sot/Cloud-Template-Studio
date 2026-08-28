@@ -7,6 +7,9 @@ import type {
   CostRulesFile,
   EvidenceIndexEntry,
   EvidenceIndexFile,
+  ImagesFile,
+  AzureImageDef,
+  AwsImageDef,
   NamingRulesFile,
   PatternFile,
   RegionDef,
@@ -29,12 +32,14 @@ import costRulesData from '@data/cost-risk-rules.json';
 import namingRulesData from '@data/naming-rules.json';
 import evidenceIndexData from '@data/evidence-index.json';
 import sourceManifestData from '@data/source-manifest.json';
+import imagesData from '@data/images.json';
 
 const azureCatalogue = azureResourceCatalogue as ResourceCatalogueFile;
 const awsCatalogue = awsResourceCatalogue as ResourceCatalogueFile;
 const regions = regionsData as RegionsFile;
 const computeSizes = computeSizesData as ComputeSizesFile;
 const evidenceIndex = evidenceIndexData as EvidenceIndexFile;
+const images = imagesData as ImagesFile;
 
 export const sourceManifest = sourceManifestData as SourceManifest;
 export const securityRules = (securityRulesData as SecurityRulesFile).rules;
@@ -72,4 +77,20 @@ export function getEvidenceEntries(): EvidenceIndexEntry[] {
 
 export function findEvidence(id: string): EvidenceIndexEntry | undefined {
   return evidenceIndex.entries.find((e) => e.id === id);
+}
+
+export function getAzureImages(): AzureImageDef[] {
+  return images.azure;
+}
+
+export function getAwsImages(): AwsImageDef[] {
+  return images.aws;
+}
+
+export function findAzureImage(id: string): AzureImageDef | undefined {
+  return images.azure.find((i) => i.id === id);
+}
+
+export function findAwsImage(id: string): AwsImageDef | undefined {
+  return images.aws.find((i) => i.id === id);
 }

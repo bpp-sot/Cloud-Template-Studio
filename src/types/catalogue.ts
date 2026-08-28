@@ -181,3 +181,29 @@ export interface SourceManifest {
 export interface EvidenceIndexFile {
   entries: EvidenceIndexEntry[];
 }
+
+/** images.json — curated OS image references (Brief §7.6). */
+export interface AzureImageDef {
+  id: string;
+  displayName: string;
+  osFamily: 'linux' | 'windows';
+  publisher: string;
+  offer: string;
+  sku: string;
+  version: string;
+  evidenceReference: string;
+}
+
+export interface AwsImageDef {
+  id: string;
+  displayName: string;
+  osFamily: 'linux' | 'windows';
+  /** SSM public parameter alias preferred over hard-coded AMI ids. */
+  ssmParameter: string;
+  evidenceReference: string;
+}
+
+export interface ImagesFile {
+  azure: AzureImageDef[];
+  aws: AwsImageDef[];
+}

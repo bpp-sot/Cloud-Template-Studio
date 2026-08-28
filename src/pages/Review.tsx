@@ -7,13 +7,16 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { loadProject } from '@/lib/storage';
+import { loadProject, exportProjectAsJson } from '@/lib/storage';
 import { copyToClipboard, downloadText, downloadJson } from '@/lib/download';
-import { exportProjectAsJson } from '@/lib/storage';
+import { generateLearnerInstructions } from '@/lib/instructions';
+import { generateValidationChecklist } from '@/lib/checklist';
 import EvidenceBadge from '@/components/EvidenceBadge';
 import type { GeneratedArtifacts, ReviewFinding, TemplateProject } from '@/types';
 
-type Tab = 'bicep' | 'arm' | 'parameters' | 'summary';
+type AzureTab = 'bicep' | 'arm' | 'parameters' | 'summary';
+type AwsTab = 'cfnYaml' | 'cfnJson' | 'parameters' | 'summary';
+type Tab = AzureTab | AwsTab;
 
 export default function Review() {
   const { projectId } = useParams();
@@ -73,13 +76,32 @@ export default function Review() {
     .replace(/[^a-z0-9-_]+/gi, '-')
     .toLowerCase();
 
-  const tabs: Array<{ id: Tab; label: string; available: boolean }> = [
+  const azureTabs: Array<{ id: AzureTab; label: string; available: boolean }> = [
     { id: 'bicep', label: 'Bicep', available: !!artifacts.bicep },
     { id: 'arm', label: 'ARM JSON', available: !!artifacts.armJson },
     { id: 'parameters', label: 'Parameters', available: !!artifacts.parametersJson },
     { id: 'summary', label: 'Summary', available: true },
   ];
+  const awsTabs: Array<{ id: AwsTab; label: string; available: boolean }> = [
+    { id: 'cfnYaml', label: 'CloudFormation YAML', available: !!artifacts.cloudFormationYaml },
+    { id: 'cfnJson', label: 'CloudFormation JSON', available: !!artifacts.cloudFormationJson },
+    { id: 'parameters', label: 'Parameters', available: !!artifacts.parametersJson },
+    { id: 'summary', label: 'Summary', available: true },
+  ];
+  const tabs = isAzure ? azureTabs : awsTabs;
   const activeTab = tabs.find((t) => t.id === tab && t.available) ?? tabs.find((t) => t.available)!;
+
+  const handleDownloadInstructions = () => {
+    if (!model) return;
+    const md = generateLearnerInstructions(project.wizard.spec, model);
+    downloadText(`${safeName}-learner-instructions.md`, md, 'text/markdown');
+  };
+
+  const handleDownloadChecklist = () => {
+    if (!model) return;
+    const md = generateValidationChecklist(project.wizard.spec, model);
+    downloadText(`${safeName}-validation-checklist.md`, md, 'text/markdown');
+  };
 
   return (
     <div>
@@ -104,22 +126,31 @@ export default function Review() {
         </div>
       </div>
 
-      {!isAzure && (
-        <div className="alert alert-warning mb-4">
-          <span>{'\u{26A0}'}</span>
-          <div>
-            AWS CloudFormation generation is delivered in Phase 3. The internal model and findings
-            below are produced now; template generation for AWS will follow.
-          </div>
-        </div>
-      )}
-
       <div className="alert alert-info mb-4">
         <span>{'\u{2139}'}</span>
         <div>
           Generated templates are <strong>not</strong> penetration-tested, deployment-confirmed, or
           Skillable-approved. They must be externally tested in a non-production environment before
           production or Skillable use.
+        </div>
+      </div>
+
+      {/* Downloads bar */}
+      <div className="card mb-4">
+        <div className="card-header">Downloads</div>
+        <div className="flex gap-2 flex-wrap mt-2">
+          <button className="btn btn-secondary btn-sm" onClick={handleDownloadInstructions}>
+            {'\u{1F4DD}'} Learner Instructions (Markdown)
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={handleDownloadChecklist}>
+            {'\u{2705}'} Validation Checklist (Markdown)
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => downloadJson(`${safeName}.json`, exportProjectAsJson(project))}
+          >
+            {'\u{1F4E5}'} Project JSON
+          </button>
         </div>
       </div>
 
@@ -263,6 +294,36 @@ export default function Review() {
             language="json"
           />
         )}
+        {activeTab.id === 'cfnYaml' && artifacts.cloudFormationYaml && (
+          <CodeBlock
+            code={artifacts.cloudFormationYaml}
+            onCopy={() => handleCopy(artifacts.cloudFormationYaml)}
+            onDownload={() =>
+              handleDownload(
+                `${safeName}.cloudformation.yaml`,
+                artifacts.cloudFormationYaml,
+                'text/yaml',
+              )
+            }
+            copied={copied}
+            language="yaml"
+          />
+        )}
+        {activeTab.id === 'cfnJson' && artifacts.cloudFormationJson && (
+          <CodeBlock
+            code={artifacts.cloudFormationJson}
+            onCopy={() => handleCopy(artifacts.cloudFormationJson)}
+            onDownload={() =>
+              handleDownload(
+                `${safeName}.cloudformation.json`,
+                artifacts.cloudFormationJson,
+                'application/json',
+              )
+            }
+            copied={copied}
+            language="json"
+          />
+        )}
         {activeTab.id === 'parameters' && artifacts.parametersJson && (
           <CodeBlock
             code={artifacts.parametersJson}
@@ -366,6 +427,7 @@ function SummaryView({ artifacts }: { artifacts: GeneratedArtifacts }) {
   const secFindings = model.findings.filter((f) => f.kind === 'security');
   const costFindings = model.findings.filter((f) => f.kind === 'cost');
   const depFindings = model.findings.filter((f) => f.kind === 'dependency');
+  const isAzure = artifacts.provider === 'azure';
 
   return (
     <div>
@@ -378,7 +440,7 @@ function SummaryView({ artifacts }: { artifacts: GeneratedArtifacts }) {
       <div className="card mb-4">
         <div className="card-header">Deployment Container</div>
         <p className="text-sm">
-          {artifacts.provider === 'azure'
+          {isAzure
             ? 'Azure Resource Group. Deploy with az deployment group create or the Azure Portal.'
             : 'AWS CloudFormation Stack. Deploy with aws cloudformation deploy or the AWS Console.'}
         </p>
@@ -413,7 +475,7 @@ function SummaryView({ artifacts }: { artifacts: GeneratedArtifacts }) {
           <span>{'\u{2139}'}</span>
           <div>
             Exact prices are not provided. Use the{' '}
-            {artifacts.provider === 'azure' ? (
+            {isAzure ? (
               <a
                 href="https://azure.microsoft.com/pricing/calculator/"
                 target="_blank"
@@ -447,13 +509,13 @@ function SummaryView({ artifacts }: { artifacts: GeneratedArtifacts }) {
           <li>&#9744; Verify initialization scripts complete successfully.</li>
           <li>&#9744; Verify cleanup removes all generated resources.</li>
           <li>&#9744; Confirm region and SKU availability in your subscription.</li>
-          {artifacts.provider === 'azure' && (
+          {isAzure && (
             <li>
               &#9744; Confirm a compatible Skillable Azure ACP exists where learners create
               resources.
             </li>
           )}
-          {artifacts.provider === 'aws' && (
+          {!isAzure && (
             <li>
               &#9744; Confirm a compatible Skillable AWS IAM policy exists where learners create
               resources.
@@ -462,6 +524,9 @@ function SummaryView({ artifacts }: { artifacts: GeneratedArtifacts }) {
           <li>&#9744; Record the tested template version and date.</li>
           <li>&#9744; Confirm Skillable compatibility with the lab platform.</li>
         </ul>
+        <div className="text-sm text-muted mt-2">
+          Download the full validation checklist from the Downloads section above.
+        </div>
       </div>
     </div>
   );

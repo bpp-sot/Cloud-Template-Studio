@@ -217,6 +217,8 @@ export interface AzureProviderConfig {
     sku: string;
     version: string;
   } | null;
+  /** Selected image id from images.json, or null for the default. */
+  imageId: string | null;
   /** Opt-in diagnostics storage (never silent). */
   bootDiagnosticsEnabled: boolean;
 }
@@ -226,6 +228,8 @@ export interface AwsProviderConfig {
   stackName: string;
   /** AMI strategy — SSM parameter alias preferred over hard-coded AMI ids. */
   amiStrategy: 'ssm-parameter' | 'explicit-ami';
+  /** Selected image id from images.json, or null for the default. */
+  imageId: string | null;
   ssmParameterName: string | null;
   explicitAmiId: string | null;
   /** Key-pair strategy. Never embeds private keys. */
