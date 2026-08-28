@@ -1,0 +1,25 @@
+{
+  "azure": [
+    { "id": "eastus", "displayName": "East US", "provider": "azure" },
+    { "id": "eastus2", "displayName": "East US 2", "provider": "azure" },
+    { "id": "westus2", "displayName": "West US 2", "provider": "azure" },
+    { "id": "westus3", "displayName": "West US 3", "provider": "azure" },
+    { "id": "centralus", "displayName": "Central US", "provider": "azure" },
+    { "id": "northeurope", "displayName": "North Europe", "provider": "azure" },
+    { "id": "westeurope", "displayName": "West Europe", "provider": "azure" },
+    { "id": "uksouth", "displayName": "UK South", "provider": "azure" },
+    { "id": "ukwest", "displayName": "UK West", "provider": "azure" },
+    { "id": "southeastasia", "displayName": "Southeast Asia", "provider": "azure" },
+    { "id": "australiaeast", "displayName": "Australia East", "provider": "azure" }
+  ],
+  "aws": [
+    { "id": "us-east-1", "displayName": "US East (N. Virginia)", "provider": "aws" },
+    { "id": "us-east-2", "displayName": "US East (Ohio)", "provider": "aws" },
+    { "id": "us-west-2", "displayName": "US West (Oregon)", "provider": "aws" },
+    { "id": "eu-west-1", "displayName": "Europe (Ireland)", "provider": "aws" },
+    { "id": "eu-west-2", "displayName": "Europe (London)", "provider": "aws" },
+    { "id": "eu-central-1", "displayName": "Europe (Frankfurt)", "provider": "aws" },
+    { "id": "ap-southeast-1", "displayName": "Asia Pacific (Singapore)", "provider": "aws" },
+    { "id": "ap-southeast-2", "displayName": "Asia Pacific (Sydney)", "provider": "aws" }
+  ]
+}

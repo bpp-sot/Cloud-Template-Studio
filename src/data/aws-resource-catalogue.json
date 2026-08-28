@@ -1,0 +1,139 @@
+{
+  "provider": "aws",
+  "resources": [
+    {
+      "id": "aws-ec2-instance",
+      "provider": "aws",
+      "resourceType": "AWS::EC2::Instance",
+      "category": "Compute",
+      "supportedProperties": [
+        "InstanceType",
+        "ImageId",
+        "SubnetId",
+        "SecurityGroupIds",
+        "BlockDeviceMappings",
+        "KeyName",
+        "UserData",
+        "IamInstanceProfile",
+        "Tags"
+      ],
+      "defaults": {
+        "rootVolumeType": "gp3",
+        "rootVolumeSizeGb": 30,
+        "associatePublicIpAddress": false
+      },
+      "dependencies": [
+        {
+          "identifier": "aws-ebs-root",
+          "provider": "aws",
+          "resourceType": "BlockDeviceMapping (root EBS volume)",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "provider-required",
+          "reason": "The root EBS volume is defined by the instance's block device mapping and is created with the instance. It is EBS, NOT S3.",
+          "evidenceClassification": "D",
+          "evidenceReference": "aws-ebs-doc",
+          "securityImpact": "EBS volumes should be encrypted; access is controlled by the instance.",
+          "costImpact": "Root EBS volume incurs per-GB storage cost for the lab duration.",
+          "userSelectable": false
+        },
+        {
+          "identifier": "aws-vpc",
+          "provider": "aws",
+          "resourceType": "AWS::EC2::VPC",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "provider-required",
+          "reason": "A VPC provides the isolated network the instance and subnet reside in.",
+          "evidenceClassification": "D",
+          "evidenceReference": "aws-vpc-doc",
+          "securityImpact": "Defines the network boundary. No inbound internet access without an internet gateway and route.",
+          "costImpact": "No direct charge for the VPC itself.",
+          "userSelectable": false
+        },
+        {
+          "identifier": "aws-subnet",
+          "provider": "aws",
+          "resourceType": "AWS::EC2::Subnet",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "provider-required",
+          "reason": "A subnet within the VPC is required to launch the EC2 instance.",
+          "evidenceClassification": "D",
+          "evidenceReference": "aws-subnet-doc",
+          "securityImpact": "MapPublicIpOnLaunch is left disabled unless public access is requested.",
+          "costImpact": "No direct charge for the subnet.",
+          "userSelectable": false
+        },
+        {
+          "identifier": "aws-security-group",
+          "provider": "aws",
+          "resourceType": "AWS::EC2::SecurityGroup",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "safety-recommended",
+          "reason": "A security group is attached so inbound access is denied unless an ingress rule is explicitly added by the author.",
+          "evidenceClassification": "E",
+          "evidenceReference": "aws-sg-doc",
+          "securityImpact": "Default posture allows no inbound traffic. Ingress rules are opt-in and reviewed.",
+          "costImpact": "No direct charge for the security group.",
+          "userSelectable": false
+        },
+        {
+          "identifier": "aws-internet-gateway",
+          "provider": "aws",
+          "resourceType": "AWS::EC2::InternetGateway",
+          "required": false,
+          "autoIncluded": false,
+          "origin": "user-selectable",
+          "reason": "An internet gateway plus a default route are only added when the author explicitly requests inbound/outbound internet access.",
+          "evidenceClassification": "E",
+          "evidenceReference": "safety-no-public-ip",
+          "securityImpact": "Enables internet exposure. Requires justification and restrictive security group rules.",
+          "costImpact": "No direct charge for the internet gateway, but public IPv4 addresses incur an hourly charge.",
+          "userSelectable": true
+        },
+        {
+          "identifier": "aws-route-table",
+          "provider": "aws",
+          "resourceType": "AWS::EC2::RouteTable",
+          "required": false,
+          "autoIncluded": false,
+          "origin": "user-selectable",
+          "reason": "A route table with a default route to the internet gateway is only added when public access is requested.",
+          "evidenceClassification": "D",
+          "evidenceReference": "aws-rt-doc",
+          "securityImpact": "Adds a route to the internet gateway, enabling egress/ingress paths.",
+          "costImpact": "No direct charge for the route table.",
+          "userSelectable": true
+        }
+      ],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "low",
+        "network": "medium",
+        "cost": "medium"
+      },
+      "costSensitivity": "medium",
+      "evidence": [
+        {
+          "classification": "D",
+          "sourceTitle": "AWS::EC2::Instance — CloudFormation resource reference",
+          "sourcePath": "AWSCloudFormation/aws-resource-ec2-instance",
+          "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html",
+          "rationale": "Authoritative property set for the EC2 instance resource.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2010-09-09"
+        }
+      ],
+      "limitations": [
+        "Instance type availability and vCPU quotas vary by region and account; this tool cannot confirm live availability.",
+        "AMI ids are region-specific; prefer an SSM public parameter alias over a hard-coded AMI id."
+      ],
+      "documentationUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html",
+      "schemaOrApiVersion": "2010-09-09",
+      "reviewDate": "2026-08-28"
+    }
+  ]
+}

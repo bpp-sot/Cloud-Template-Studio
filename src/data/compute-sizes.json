@@ -1,0 +1,106 @@
+{
+  "azure": [
+    {
+      "id": "Standard_B1s",
+      "provider": "azure",
+      "displayName": "Standard_B1s (burstable, 1 vCPU, 1 GiB)",
+      "vcpu": 1,
+      "memoryGb": 1,
+      "costFlag": false,
+      "category": "burstable",
+      "evidenceReference": "az-vm-doc"
+    },
+    {
+      "id": "Standard_B2s",
+      "provider": "azure",
+      "displayName": "Standard_B2s (burstable, 2 vCPU, 4 GiB)",
+      "vcpu": 2,
+      "memoryGb": 4,
+      "costFlag": false,
+      "category": "burstable",
+      "evidenceReference": "az-vm-doc"
+    },
+    {
+      "id": "Standard_D2s_v5",
+      "provider": "azure",
+      "displayName": "Standard_D2s_v5 (general purpose, 2 vCPU, 8 GiB)",
+      "vcpu": 2,
+      "memoryGb": 8,
+      "costFlag": false,
+      "category": "general",
+      "evidenceReference": "az-vm-doc"
+    },
+    {
+      "id": "Standard_D4s_v5",
+      "provider": "azure",
+      "displayName": "Standard_D4s_v5 (general purpose, 4 vCPU, 16 GiB)",
+      "vcpu": 4,
+      "memoryGb": 16,
+      "costFlag": false,
+      "category": "general",
+      "evidenceReference": "az-vm-doc"
+    },
+    {
+      "id": "Standard_NC4as_T4_v3",
+      "provider": "azure",
+      "displayName": "Standard_NC4as_T4_v3 (GPU, 4 vCPU, 28 GiB, T4)",
+      "vcpu": 4,
+      "memoryGb": 28,
+      "costFlag": true,
+      "category": "gpu",
+      "evidenceReference": "az-vm-doc"
+    }
+  ],
+  "aws": [
+    {
+      "id": "t3.micro",
+      "provider": "aws",
+      "displayName": "t3.micro (burstable, 2 vCPU, 1 GiB)",
+      "vcpu": 2,
+      "memoryGb": 1,
+      "costFlag": false,
+      "category": "burstable",
+      "evidenceReference": "aws-ec2-doc"
+    },
+    {
+      "id": "t3.small",
+      "provider": "aws",
+      "displayName": "t3.small (burstable, 2 vCPU, 2 GiB)",
+      "vcpu": 2,
+      "memoryGb": 2,
+      "costFlag": false,
+      "category": "burstable",
+      "evidenceReference": "aws-ec2-doc"
+    },
+    {
+      "id": "m5.large",
+      "provider": "aws",
+      "displayName": "m5.large (general purpose, 2 vCPU, 8 GiB)",
+      "vcpu": 2,
+      "memoryGb": 8,
+      "costFlag": false,
+      "category": "general",
+      "evidenceReference": "aws-ec2-doc"
+    },
+    {
+      "id": "m5.xlarge",
+      "provider": "aws",
+      "displayName": "m5.xlarge (general purpose, 4 vCPU, 16 GiB)",
+      "vcpu": 4,
+      "memoryGb": 16,
+      "costFlag": false,
+      "category": "general",
+      "evidenceReference": "aws-ec2-doc"
+    },
+    {
+      "id": "g4dn.xlarge",
+      "provider": "aws",
+      "displayName": "g4dn.xlarge (GPU, 4 vCPU, 16 GiB, T4)",
+      "vcpu": 4,
+      "memoryGb": 16,
+      "costFlag": true,
+      "category": "gpu",
+      "evidenceReference": "aws-ec2-doc"
+    }
+  ]
+}

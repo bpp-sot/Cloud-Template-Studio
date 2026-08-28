@@ -1,0 +1,44 @@
+{
+  "rules": [
+    {
+      "id": "cost-gpu-oversized",
+      "category": "Oversized / GPU compute",
+      "provider": "neutral",
+      "description": "A GPU or large compute size is selected, which is significantly more expensive than general-purpose lab sizes.",
+      "guidance": "Confirm the lab genuinely needs GPU or large compute. Prefer a smaller size where possible. Estimate cost with the official pricing calculator.",
+      "pricingCalculatorUrl": "https://azure.microsoft.com/pricing/calculator/"
+    },
+    {
+      "id": "cost-public-ipv4",
+      "category": "Public IPv4",
+      "provider": "neutral",
+      "description": "A public IPv4 address is requested, which incurs an hourly charge on both providers.",
+      "guidance": "Only enable a public IP when inbound access is required. Remove it for private-only labs.",
+      "pricingCalculatorUrl": "https://calculator.aws/"
+    },
+    {
+      "id": "cost-premium-disk",
+      "category": "Premium storage",
+      "provider": "neutral",
+      "description": "Premium/SSD storage is selected where standard storage may suffice for a lab.",
+      "guidance": "Use standard or balanced storage tiers for labs unless performance testing is an outcome.",
+      "pricingCalculatorUrl": "https://azure.microsoft.com/pricing/calculator/"
+    },
+    {
+      "id": "cost-multi-machine",
+      "category": "Multiple machines",
+      "provider": "neutral",
+      "description": "Multiple compute instances multiply the per-hour cost for the lab duration.",
+      "guidance": "Confirm each instance is required by a learner or technical task. Reduce the count where possible.",
+      "pricingCalculatorUrl": "https://calculator.aws/"
+    },
+    {
+      "id": "cost-long-duration",
+      "category": "Long lab duration",
+      "provider": "neutral",
+      "description": "A long expected lab duration increases total consumption cost.",
+      "guidance": "Ensure cleanup is configured so resources do not persist beyond the lab. Consider auto-shutdown where supported.",
+      "pricingCalculatorUrl": "https://azure.microsoft.com/pricing/calculator/"
+    }
+  ]
+}

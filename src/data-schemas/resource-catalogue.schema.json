@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bpp-sot.github.io/Cloud-Template-Studio/schemas/resource-catalogue.json",
+  "title": "Resource Catalogue File",
+  "type": "object",
+  "required": ["provider", "resources"],
+  "additionalProperties": false,
+  "properties": {
+    "provider": { "enum": ["azure", "aws"] },
+    "resources": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/resource" }
+    }
+  },
+  "definitions": {
+    "evidenceClassification": { "enum": ["A", "B", "C", "D", "E", "F", "G"] },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identifier",
+        "provider",
+        "resourceType",
+        "required",
+        "autoIncluded",
+        "origin",
+        "reason",
+        "evidenceClassification",
+        "evidenceReference",
+        "securityImpact",
+        "costImpact",
+        "userSelectable"
+      ],
+      "properties": {
+        "identifier": { "type": "string", "minLength": 1 },
+        "provider": { "enum": ["azure", "aws"] },
+        "resourceType": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "autoIncluded": { "type": "boolean" },
+        "origin": {
+          "enum": [
+            "provider-required",
+            "pattern-required",
+            "skillable-required",
+            "safety-recommended",
+            "user-selectable"
+          ]
+        },
+        "reason": { "type": "string", "minLength": 1 },
+        "evidenceClassification": { "$ref": "#/definitions/evidenceClassification" },
+        "evidenceReference": { "type": "string", "minLength": 1 },
+        "securityImpact": { "type": "string" },
+        "costImpact": { "type": "string" },
+        "userSelectable": { "type": "boolean" }
+      }
+    },
+    "evidenceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "sourceTitle",
+        "sourcePath",
+        "sourceUrl",
+        "rationale",
+        "provenance",
+        "confidence"
+      ],
+      "properties": {
+        "classification": { "$ref": "#/definitions/evidenceClassification" },
+        "sourceTitle": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": ["string", "null"] },
+        "sourceUrl": { "type": ["string", "null"] },
+        "rationale": { "type": "string", "minLength": 1 },
+        "provenance": {
+          "enum": ["copied", "parameterised", "combined", "application-generated"]
+        },
+        "confidence": { "enum": ["high", "medium", "low"] },
+        "schemaOrApiVersion": { "type": ["string", "null"] }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "provider",
+        "resourceType",
+        "category",
+        "supportedProperties",
+        "defaults",
+        "dependencies",
+        "riskProfile",
+        "costSensitivity",
+        "evidence",
+        "limitations",
+        "documentationUrl",
+        "schemaOrApiVersion",
+        "reviewDate"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "provider": { "enum": ["azure", "aws"] },
+        "resourceType": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "supportedProperties": { "type": "array", "items": { "type": "string" } },
+        "defaults": { "type": "object" },
+        "dependencies": { "type": "array", "items": { "$ref": "#/definitions/dependency" } },
+        "riskProfile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["publicExposure", "identity", "network", "cost"],
+          "properties": {
+            "publicExposure": { "enum": ["none", "optional", "high"] },
+            "identity": { "enum": ["none", "low", "medium", "high"] },
+            "network": { "enum": ["none", "low", "medium", "high"] },
+            "cost": { "enum": ["low", "medium", "high"] }
+          }
+        },
+        "costSensitivity": { "enum": ["low", "medium", "high"] },
+        "evidence": { "type": "array", "items": { "$ref": "#/definitions/evidenceReference" } },
+        "limitations": { "type": "array", "items": { "type": "string" } },
+        "documentationUrl": { "type": "string", "minLength": 1 },
+        "schemaOrApiVersion": { "type": "string", "minLength": 1 },
+        "reviewDate": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

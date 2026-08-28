@@ -1,0 +1,26 @@
+## License
+
+This application does not currently include an open-source license. All rights are reserved by the project maintainers (BPP School of Technology).
+
+### Third-Party Content
+
+The application references and normalises data from official Microsoft Azure documentation, Amazon Web Services documentation, and Skillable documentation. Attribution is preserved throughout the application: source titles, documentation URLs, evidence classifications and review dates are maintained in the evidence data (`src/data/evidence-index.json` and `src/data/source-manifest.json`).
+
+If you intend to redistribute this application or its data, you should:
+
+1. Review the terms of the referenced Microsoft, AWS and Skillable documentation sources.
+2. Preserve all attribution notices.
+3. Consult with legal counsel regarding licensing requirements.
+
+### Libraries
+
+This application uses the following open-source libraries (see `package.json` for full details):
+
+- React (MIT)
+- TypeScript (Apache-2.0)
+- Vite (MIT)
+- Vitest (MIT)
+- Playwright (Apache-2.0)
+- ESLint (MIT)
+- Prettier (MIT)
+- Ajv (MIT)

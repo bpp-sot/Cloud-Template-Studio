@@ -1,0 +1,40 @@
+{
+  "provider": "aws",
+  "patterns": [
+    {
+      "id": "aws-single-ec2",
+      "provider": "aws",
+      "patternId": "single-vm",
+      "title": "Single AWS EC2 instance (private by default)",
+      "purpose": "A single Linux or Windows EC2 instance in a dedicated VPC and subnet for a self-contained lab, with no inbound internet access unless explicitly requested.",
+      "suggestedResources": ["aws-ec2-instance"],
+      "securityObservations": [
+        "No internet gateway, route, or public IP is created unless the author opts in.",
+        "A security group is attached and allows no inbound traffic by default.",
+        "No key pair private material is ever embedded; only an existing key-pair name may be referenced."
+      ],
+      "costConsiderations": [
+        "Instance type is the dominant cost driver; prefer a small general-purpose or burstable type for labs.",
+        "A public IPv4 address, if requested, incurs an hourly charge.",
+        "The root EBS volume incurs per-GB storage cost for the lab duration."
+      ],
+      "limitations": [
+        "Region and instance-type availability and quotas cannot be confirmed by this tool.",
+        "AMI ids are region-specific; an SSM public parameter alias is preferred."
+      ],
+      "evidence": [
+        {
+          "classification": "D",
+          "sourceTitle": "AWS CloudFormation EC2 instance in a VPC (resource reference)",
+          "sourcePath": "AWSCloudFormation/aws-resource-ec2-instance",
+          "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html",
+          "rationale": "The single-EC2 composition follows the documented Instance + VPC + Subnet + SecurityGroup relationship.",
+          "provenance": "combined",
+          "confidence": "high",
+          "schemaOrApiVersion": "2010-09-09"
+        }
+      ],
+      "documentationUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html"
+    }
+  ]
+}

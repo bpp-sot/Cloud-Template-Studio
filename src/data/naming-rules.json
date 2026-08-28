@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "az-vm-name",
+      "provider": "azure",
+      "resourceType": "Microsoft.Compute/virtualMachines",
+      "pattern": "^[a-zA-Z0-9-]{1,64}$",
+      "maxLength": 64,
+      "notes": "Windows computer names are limited to 15 characters; Linux to 64. Avoid special characters."
+    },
+    {
+      "id": "az-storage-name",
+      "provider": "azure",
+      "resourceType": "Microsoft.Storage/storageAccounts",
+      "pattern": "^[a-z0-9]{3,24}$",
+      "maxLength": 24,
+      "notes": "Storage Account names must be globally unique, 3-24 lowercase alphanumeric characters."
+    },
+    {
+      "id": "aws-stack-name",
+      "provider": "aws",
+      "resourceType": "AWS::CloudFormation::Stack",
+      "pattern": "^[A-Za-z][A-Za-z0-9-]{0,127}$",
+      "maxLength": 128,
+      "notes": "Stack names must start with a letter and contain only letters, numbers and hyphens."
+    },
+    {
+      "id": "aws-s3-bucket",
+      "provider": "aws",
+      "resourceType": "AWS::S3::Bucket",
+      "pattern": "^[a-z0-9.-]{3,63}$",
+      "maxLength": 63,
+      "notes": "Bucket names must be globally unique, 3-63 lowercase characters; no underscores or uppercase."
+    }
+  ]
+}

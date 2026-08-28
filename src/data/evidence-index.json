@@ -1,0 +1,202 @@
+{
+  "entries": [
+    {
+      "id": "az-vm-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.Compute/virtualMachines — ARM template reference",
+      "sourcePath": "azure/templates/microsoft.compute/virtualmachines",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachines",
+      "rationale": "Defines the virtualMachines resource, its hardwareProfile.vmSize, storageProfile, osProfile and networkProfile properties.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "az-nic-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.Network/networkInterfaces — ARM template reference",
+      "sourcePath": "azure/templates/microsoft.network/networkinterfaces",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.network/networkinterfaces",
+      "rationale": "A network interface is required to attach a virtual machine to a subnet.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "az-vnet-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.Network/virtualNetworks — ARM template reference",
+      "sourcePath": "azure/templates/microsoft.network/virtualnetworks",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.network/virtualnetworks",
+      "rationale": "A virtual network and subnet provide the address space a network interface binds to.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "az-nsg-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.Network/networkSecurityGroups — ARM template reference",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.network/networksecuritygroups",
+      "sourcePath": "azure/templates/microsoft.network/networksecuritygroups",
+      "rationale": "A network security group applies inbound/outbound rules to the subnet or NIC.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "az-pip-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.Network/publicIPAddresses — ARM template reference",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.network/publicipaddresses",
+      "sourcePath": "azure/templates/microsoft.network/publicipaddresses",
+      "rationale": "A public IP address is only required when inbound internet access to the VM is explicitly requested.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "az-disk-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Azure managed disks overview (VM storageProfile.osDisk)",
+      "sourceUrl": "https://learn.microsoft.com/azure/virtual-machines/managed-disks-overview",
+      "sourcePath": "azure/virtual-machines/managed-disks-overview",
+      "rationale": "A managed OS disk is an intrinsic part of the virtual machine's storageProfile and is created with the VM. It is not a separate Storage Account.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "aws-ec2-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::EC2::Instance — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-ec2-instance",
+      "rationale": "Defines the EC2 instance, its InstanceType, ImageId, SubnetId, SecurityGroupIds and BlockDeviceMappings.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "aws-vpc-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::EC2::VPC — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-ec2-vpc",
+      "rationale": "A VPC provides the isolated network the EC2 instance and subnet reside in.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "aws-subnet-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::EC2::Subnet — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-ec2-subnet",
+      "rationale": "A subnet within the VPC is required to launch the EC2 instance.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "aws-sg-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::EC2::SecurityGroup — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-securitygroup.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-ec2-securitygroup",
+      "rationale": "A security group controls inbound/outbound traffic for the EC2 instance's network interface.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "aws-ebs-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "EC2 BlockDeviceMapping / AWS::EC2::Volume — CloudFormation reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-blockdev-mapping.html",
+      "sourcePath": "AWSCloudFormation/aws-properties-ec2-blockdev-mapping",
+      "rationale": "The root EBS volume is defined by the instance's block device mapping and is created with the instance.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "aws-igw-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::EC2::InternetGateway — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-internetgateway.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-ec2-internetgateway",
+      "rationale": "An internet gateway plus route are only required when inbound/outbound internet access is explicitly requested.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "aws-rt-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::EC2::RouteTable — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-routetable.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-ec2-routetable",
+      "rationale": "A route table associates the subnet with routes, including a default route to an internet gateway when public access is requested.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "skillable-general",
+      "classification": "B",
+      "provider": "neutral",
+      "sourceTitle": "Skillable documentation (general)",
+      "sourceUrl": "https://docs.skillable.com/",
+      "sourcePath": null,
+      "rationale": "General Skillable lab authoring guidance. Specific behaviour must be confirmed against an official Skillable source before being stated as a requirement.",
+      "confidence": "medium",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "safety-no-public-ip",
+      "classification": "E",
+      "provider": "neutral",
+      "sourceTitle": "Application safety constraint — public IP is opt-in",
+      "sourceUrl": null,
+      "sourcePath": null,
+      "rationale": "SoT Cloud Template Studio never adds a public IP address unless the lab author explicitly requests inbound internet access.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "safety-no-open-cidr",
+      "classification": "E",
+      "provider": "neutral",
+      "sourceTitle": "Application safety constraint — no unrestricted CIDR",
+      "sourceUrl": null,
+      "sourcePath": null,
+      "rationale": "Inbound rules using 0.0.0.0/0 are flagged as a security finding and are never generated silently.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "safety-s3-block-public",
+      "classification": "E",
+      "provider": "neutral",
+      "sourceTitle": "Application safety constraint — S3/blob public access blocked by default",
+      "sourceUrl": null,
+      "sourcePath": null,
+      "rationale": "Object storage is generated with public access blocked unless the author explicitly opts in.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "safety-secure-input",
+      "classification": "E",
+      "provider": "neutral",
+      "sourceTitle": "Application safety constraint — secure inputs only",
+      "sourceUrl": null,
+      "sourcePath": null,
+      "rationale": "Sensitive inputs are declared as secure parameters and are never embedded as literals in generated templates.",
+      "confidence": "high",
+      "reviewDate": "2026-08-28"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "rules": [
+    {
+      "id": "sec-public-ip",
+      "category": "Public exposure",
+      "severity": "high",
+      "provider": "neutral",
+      "description": "A public IP address / internet gateway is enabled, exposing compute to the public internet.",
+      "recommendation": "Confirm inbound access is required. Restrict inbound rules to specific source ranges and management ports only."
+    },
+    {
+      "id": "sec-open-cidr",
+      "category": "Unrestricted network access",
+      "severity": "critical",
+      "provider": "neutral",
+      "description": "An inbound rule allows traffic from 0.0.0.0/0 (any source).",
+      "recommendation": "Replace the wildcard CIDR with the smallest specific source range required for the lab."
+    },
+    {
+      "id": "sec-mgmt-port",
+      "category": "Management ports",
+      "severity": "high",
+      "provider": "neutral",
+      "description": "A management port (SSH 22 or RDP 3389) is open to a broad source range.",
+      "recommendation": "Limit management-port access to known source addresses, or use a bastion / just-in-time access pattern."
+    },
+    {
+      "id": "sec-weak-auth",
+      "category": "Authentication",
+      "severity": "high",
+      "provider": "azure",
+      "description": "Password authentication is selected for a VM where key-based authentication is available.",
+      "recommendation": "Prefer SSH public-key authentication for Linux VMs. Ensure any password is supplied via a secure parameter, never embedded."
+    },
+    {
+      "id": "sec-embedded-secret",
+      "category": "Embedded credentials",
+      "severity": "critical",
+      "provider": "neutral",
+      "description": "A potential secret was detected in a free-text field or initialisation script.",
+      "recommendation": "Remove the secret. Use a secure parameter or a runtime secret store. Templates must never contain credentials."
+    },
+    {
+      "id": "sec-public-storage",
+      "category": "Public storage",
+      "severity": "high",
+      "provider": "neutral",
+      "description": "Object storage has public access enabled.",
+      "recommendation": "Block public access unless the lab explicitly requires anonymous access, and document the justification."
+    },
+    {
+      "id": "sec-missing-dependency",
+      "category": "Missing resource dependencies",
+      "severity": "high",
+      "provider": "neutral",
+      "description": "A required supporting resource is not present, which will likely cause the deployment to fail.",
+      "recommendation": "Include the required supporting resources. Missing networking is a common cause of VM / EC2 deployment failures."
+    },
+    {
+      "id": "sec-professional-addition",
+      "category": "Professional Mode addition",
+      "severity": "medium",
+      "provider": "neutral",
+      "description": "Custom (Classification F) fragments were added and are not validated against official evidence.",
+      "recommendation": "Manually review the custom fragments for correctness, security, and duplicate identifiers before deployment."
+    }
+  ]
+}

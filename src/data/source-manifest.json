@@ -1,0 +1,32 @@
+{
+  "product": "SoT Cloud Template Studio",
+  "evidenceSyncDate": "2026-08-28",
+  "providerSchemaVersions": {
+    "azureResourceManager": "2024-07-01",
+    "awsCloudFormation": "2010-09-09"
+  },
+  "sources": [
+    {
+      "id": "src-azure-templates",
+      "title": "Azure Resource Manager template reference (Microsoft Learn)",
+      "url": "https://learn.microsoft.com/azure/templates/",
+      "classification": "C",
+      "retrievedDate": "2026-08-28"
+    },
+    {
+      "id": "src-aws-cfn-userguide",
+      "title": "AWS CloudFormation User Guide — resource and property reference",
+      "url": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/",
+      "classification": "D",
+      "retrievedDate": "2026-08-28"
+    },
+    {
+      "id": "src-skillable-docs",
+      "title": "Skillable documentation",
+      "url": "https://docs.skillable.com/",
+      "classification": "B",
+      "retrievedDate": "2026-08-28"
+    }
+  ],
+  "licenseNote": "Evidence is a curated snapshot of official provider and Skillable documentation, recorded with retrieval dates. It is not a live feed and must be re-reviewed on the review dates recorded against each catalogue entry."
+}

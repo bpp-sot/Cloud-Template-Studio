@@ -1,0 +1,137 @@
+{
+  "provider": "azure",
+  "resources": [
+    {
+      "id": "azure-vm",
+      "provider": "azure",
+      "resourceType": "Microsoft.Compute/virtualMachines",
+      "category": "Compute",
+      "supportedProperties": [
+        "hardwareProfile.vmSize",
+        "storageProfile.imageReference",
+        "storageProfile.osDisk",
+        "osProfile.computerName",
+        "osProfile.adminUsername",
+        "osProfile.linuxConfiguration.ssh",
+        "networkProfile.networkInterfaces",
+        "diagnosticsProfile.bootDiagnostics"
+      ],
+      "defaults": {
+        "osDiskCreateOption": "FromImage",
+        "osDiskManagedDiskStorageAccountType": "StandardSSD_LRS"
+      },
+      "dependencies": [
+        {
+          "identifier": "azure-vm-osdisk",
+          "provider": "azure",
+          "resourceType": "storageProfile.osDisk (managed disk)",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "provider-required",
+          "reason": "The managed OS disk is an intrinsic part of the virtual machine's storageProfile and is created with the VM. It is a managed disk, NOT a Storage Account.",
+          "evidenceClassification": "C",
+          "evidenceReference": "az-disk-doc",
+          "securityImpact": "Managed disks are encrypted at rest with platform-managed keys by default.",
+          "costImpact": "OS disk incurs managed-disk storage cost for the lab duration.",
+          "userSelectable": false
+        },
+        {
+          "identifier": "azure-nic",
+          "provider": "azure",
+          "resourceType": "Microsoft.Network/networkInterfaces",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "provider-required",
+          "reason": "A network interface is required to connect the virtual machine to a subnet.",
+          "evidenceClassification": "C",
+          "evidenceReference": "az-nic-doc",
+          "securityImpact": "The NIC binds the VM to a subnet governed by a network security group.",
+          "costImpact": "No direct charge for the NIC itself.",
+          "userSelectable": false
+        },
+        {
+          "identifier": "azure-vnet",
+          "provider": "azure",
+          "resourceType": "Microsoft.Network/virtualNetworks",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "provider-required",
+          "reason": "A virtual network provides the private address space for the VM's subnet.",
+          "evidenceClassification": "C",
+          "evidenceReference": "az-vnet-doc",
+          "securityImpact": "Defines the private network boundary. No inbound internet access by default.",
+          "costImpact": "No direct charge for the virtual network itself.",
+          "userSelectable": false
+        },
+        {
+          "identifier": "azure-nsg",
+          "provider": "azure",
+          "resourceType": "Microsoft.Network/networkSecurityGroups",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "safety-recommended",
+          "reason": "A network security group is attached so inbound access is denied unless an inbound rule is explicitly added by the author.",
+          "evidenceClassification": "E",
+          "evidenceReference": "az-nsg-doc",
+          "securityImpact": "Default posture denies inbound internet traffic. Rules are opt-in and reviewed.",
+          "costImpact": "No direct charge for the network security group.",
+          "userSelectable": false
+        },
+        {
+          "identifier": "azure-public-ip",
+          "provider": "azure",
+          "resourceType": "Microsoft.Network/publicIPAddresses",
+          "required": false,
+          "autoIncluded": false,
+          "origin": "user-selectable",
+          "reason": "A public IP address is only added when the author explicitly requests inbound internet access to the VM.",
+          "evidenceClassification": "E",
+          "evidenceReference": "safety-no-public-ip",
+          "securityImpact": "Exposes the VM to the public internet. Requires justification and restrictive inbound rules.",
+          "costImpact": "Standard public IPv4 addresses incur an hourly charge.",
+          "userSelectable": true
+        },
+        {
+          "identifier": "azure-diagnostics-storage",
+          "provider": "azure",
+          "resourceType": "Microsoft.Storage/storageAccounts (boot diagnostics)",
+          "required": false,
+          "autoIncluded": false,
+          "origin": "user-selectable",
+          "reason": "A Storage Account for boot diagnostics is only added when boot diagnostics are explicitly enabled. This is a Storage Account, NOT a managed disk.",
+          "evidenceClassification": "C",
+          "evidenceReference": "az-disk-doc",
+          "securityImpact": "Stores boot diagnostic logs; should not be publicly accessible.",
+          "costImpact": "Incurs Storage Account transaction and capacity charges.",
+          "userSelectable": true
+        }
+      ],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "low",
+        "network": "medium",
+        "cost": "medium"
+      },
+      "costSensitivity": "medium",
+      "evidence": [
+        {
+          "classification": "C",
+          "sourceTitle": "Microsoft.Compute/virtualMachines — ARM template reference",
+          "sourcePath": "azure/templates/microsoft.compute/virtualmachines",
+          "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachines",
+          "rationale": "Authoritative property set for the virtual machine resource.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2024-07-01"
+        }
+      ],
+      "limitations": [
+        "SKU/size availability varies by region and subscription quota; this tool cannot confirm live availability.",
+        "Windows vs Linux osProfile differs; the correct image reference must be supplied by the author."
+      ],
+      "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachines",
+      "schemaOrApiVersion": "2024-07-01",
+      "reviewDate": "2026-08-28"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "provider": "azure",
+  "patterns": [
+    {
+      "id": "azure-single-vm",
+      "provider": "azure",
+      "patternId": "single-vm",
+      "title": "Single Azure virtual machine (private by default)",
+      "purpose": "A single Linux or Windows VM in a private virtual network for a self-contained lab, with no inbound internet access unless explicitly requested.",
+      "suggestedResources": ["azure-vm"],
+      "securityObservations": [
+        "No public IP address is created unless the author opts in.",
+        "A network security group is attached and denies inbound traffic by default.",
+        "Administrative credentials are declared as secure parameters, never embedded."
+      ],
+      "costConsiderations": [
+        "VM size is the dominant cost driver; prefer a small general-purpose or burstable size for labs.",
+        "A public IPv4 address, if requested, incurs an hourly charge.",
+        "The managed OS disk incurs storage cost for the lab duration."
+      ],
+      "limitations": [
+        "Region and size availability cannot be confirmed by this tool.",
+        "Windows and Linux require different image references and osProfile settings."
+      ],
+      "evidence": [
+        {
+          "classification": "C",
+          "sourceTitle": "Azure VM quickstart templates (ARM template reference)",
+          "sourcePath": "azure/templates/microsoft.compute/virtualmachines",
+          "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachines",
+          "rationale": "The single-VM composition follows the documented virtualMachines + networkInterface + virtualNetwork relationship.",
+          "provenance": "combined",
+          "confidence": "high",
+          "schemaOrApiVersion": "2024-07-01"
+        }
+      ],
+      "documentationUrl": "https://learn.microsoft.com/azure/virtual-machines/"
+    }
+  ]
+}
