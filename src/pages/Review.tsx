@@ -135,149 +135,39 @@ export default function Review() {
         </div>
       </div>
 
-      {/* Downloads bar */}
-      <div className="card mb-4">
-        <div className="card-header">Downloads</div>
-        <div className="flex gap-2 flex-wrap mt-2">
-          <button className="btn btn-secondary btn-sm" onClick={handleDownloadInstructions}>
-            {'\u{1F4DD}'} Learner Instructions (Markdown)
-          </button>
-          <button className="btn btn-secondary btn-sm" onClick={handleDownloadChecklist}>
-            {'\u{2705}'} Validation Checklist (Markdown)
-          </button>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => downloadJson(`${safeName}.json`, exportProjectAsJson(project))}
-          >
-            {'\u{1F4E5}'} Project JSON
-          </button>
-        </div>
-      </div>
+      {/* Jump menu — sticky in-page navigation */}
+      <nav className="jump-menu" aria-label="Section navigation">
+        <a href="#section-templates" className="jump-menu-link">
+          Templates
+        </a>
+        <a href="#section-resources" className="jump-menu-link">
+          Resources
+        </a>
+        {model && model.findings.length > 0 && (
+          <a href="#section-findings" className="jump-menu-link">
+            Findings ({model.findings.length})
+          </a>
+        )}
+        {model && model.parameters.length > 0 && (
+          <a href="#section-parameters" className="jump-menu-link">
+            Parameters ({model.parameters.length})
+          </a>
+        )}
+        {model && model.outputs.length > 0 && (
+          <a href="#section-outputs" className="jump-menu-link">
+            Outputs ({model.outputs.length})
+          </a>
+        )}
+        <a href="#section-downloads" className="jump-menu-link">
+          Downloads
+        </a>
+        <a href="#section-reviews" className="jump-menu-link">
+          Dedicated Reviews
+        </a>
+      </nav>
 
-      {/* Dedicated review hub */}
-      <div className="card mb-4">
-        <div className="card-header">Dedicated Reviews</div>
-        <p className="text-sm text-muted mt-2">
-          Deep-dive into security, cost, and deployment readiness with dedicated review engines.
-        </p>
-        <div className="flex gap-2 flex-wrap mt-2">
-          <Link to={`/review/${projectId}/security`} className="btn btn-secondary btn-sm">
-            {'\u{1F6E1}'} Security Review
-          </Link>
-          <Link to={`/review/${projectId}/cost`} className="btn btn-secondary btn-sm">
-            {'\u{1F4B0}'} Cost Review
-          </Link>
-          <Link to={`/review/${projectId}/deployment`} className="btn btn-secondary btn-sm">
-            {'\u{2705}'} Deployment Readiness
-          </Link>
-        </div>
-      </div>
-
-      {/* Resource inventory */}
-      {model && (
-        <div className="card mb-4">
-          <div className="card-header">Resource Inventory ({model.resources.length})</div>
-          <div className="project-list">
-            {model.resources.map((r) => (
-              <div key={r.logicalId} className="project-item">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold">{r.logicalId}</span>
-                    <span className="badge badge-info">{r.providerResourceType}</span>
-                    {r.autoIncluded && <span className="badge badge-success">Auto-included</span>}
-                    {r.origin === 'user' && <span className="badge badge-warning">User</span>}
-                  </div>
-                  <div className="text-sm text-muted mt-1">{r.purpose}</div>
-                  {r.dependsOn.length > 0 && (
-                    <div className="text-sm mt-1">
-                      <span className="text-muted">Depends on:</span>{' '}
-                      {r.dependsOn.map((d) => (
-                        <span key={d} className="badge badge-info" style={{ marginRight: '4px' }}>
-                          {d}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {r.warnings.length > 0 && (
-                    <div className="text-sm mt-1" style={{ color: 'var(--accent-warning)' }}>
-                      {r.warnings.join(' ')}
-                    </div>
-                  )}
-                  <div className="flex gap-1 mt-2 flex-wrap">
-                    {r.evidence.map((e, i) => (
-                      <EvidenceBadge
-                        key={i}
-                        classification={e.classification}
-                        title={e.rationale}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Findings */}
-      {model && model.findings.length > 0 && (
-        <div className="card mb-4">
-          <div className="card-header">Findings ({model.findings.length})</div>
-          <FindingsList findings={model.findings} />
-        </div>
-      )}
-
-      {/* Parameters */}
-      {model && model.parameters.length > 0 && (
-        <div className="card mb-4">
-          <div className="card-header">Parameters ({model.parameters.length})</div>
-          <div className="project-list">
-            {model.parameters.map((p) => (
-              <div key={p.name} className="project-item">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{p.name}</span>
-                    <span className="badge badge-info">{p.type}</span>
-                    {p.secure && <span className="badge badge-warning">Secure</span>}
-                  </div>
-                  <div className="text-sm text-muted mt-1">{p.description}</div>
-                  {p.defaultValue !== undefined && !p.secure && (
-                    <div className="text-sm mt-1">
-                      <span className="text-muted">Default:</span> {String(p.defaultValue)}
-                    </div>
-                  )}
-                  {p.secure && (
-                    <div className="text-sm mt-1" style={{ color: 'var(--accent-warning)' }}>
-                      No default &mdash; supply at deployment time. Never commit secrets.
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Outputs */}
-      {model && model.outputs.length > 0 && (
-        <div className="card mb-4">
-          <div className="card-header">Outputs ({model.outputs.length})</div>
-          <div className="project-list">
-            {model.outputs.map((o) => (
-              <div key={o.name} className="project-item">
-                <div className="flex-1">
-                  <div className="font-semibold">{o.name}</div>
-                  <div className="text-sm text-muted mt-1">{o.description}</div>
-                  <code className="text-sm">{o.valueExpression}</code>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Code viewer */}
-      <div className="card">
+      {/* Generated Templates — first, as the primary output */}
+      <div className="card mb-4" id="section-templates">
         <div className="card-header">Generated Templates</div>
         <div className="flex gap-2 mb-4 flex-wrap">
           {tabs
@@ -359,6 +249,147 @@ export default function Review() {
           />
         )}
         {activeTab.id === 'summary' && <SummaryView artifacts={artifacts} />}
+      </div>
+
+      {/* Resource inventory */}
+      {model && (
+        <div className="card mb-4" id="section-resources">
+          <div className="card-header">Resource Inventory ({model.resources.length})</div>
+          <div className="project-list">
+            {model.resources.map((r) => (
+              <div key={r.logicalId} className="project-item">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold">{r.logicalId}</span>
+                    <span className="badge badge-info">{r.providerResourceType}</span>
+                    {r.autoIncluded && <span className="badge badge-success">Auto-included</span>}
+                    {r.origin === 'user' && <span className="badge badge-warning">User</span>}
+                  </div>
+                  <div className="text-sm text-muted mt-1">{r.purpose}</div>
+                  {r.dependsOn.length > 0 && (
+                    <div className="text-sm mt-1">
+                      <span className="text-muted">Depends on:</span>{' '}
+                      {r.dependsOn.map((d) => (
+                        <span key={d} className="badge badge-info" style={{ marginRight: '4px' }}>
+                          {d}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {r.warnings.length > 0 && (
+                    <div className="text-sm mt-1" style={{ color: 'var(--accent-warning)' }}>
+                      {r.warnings.join(' ')}
+                    </div>
+                  )}
+                  <div className="flex gap-1 mt-2 flex-wrap">
+                    {r.evidence.map((e, i) => (
+                      <EvidenceBadge
+                        key={i}
+                        classification={e.classification}
+                        title={e.rationale}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Findings */}
+      {model && model.findings.length > 0 && (
+        <div className="card mb-4" id="section-findings">
+          <div className="card-header">Findings ({model.findings.length})</div>
+          <FindingsList findings={model.findings} />
+        </div>
+      )}
+
+      {/* Parameters */}
+      {model && model.parameters.length > 0 && (
+        <div className="card mb-4" id="section-parameters">
+          <div className="card-header">Parameters ({model.parameters.length})</div>
+          <div className="project-list">
+            {model.parameters.map((p) => (
+              <div key={p.name} className="project-item">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{p.name}</span>
+                    <span className="badge badge-info">{p.type}</span>
+                    {p.secure && <span className="badge badge-warning">Secure</span>}
+                  </div>
+                  <div className="text-sm text-muted mt-1">{p.description}</div>
+                  {p.defaultValue !== undefined && !p.secure && (
+                    <div className="text-sm mt-1">
+                      <span className="text-muted">Default:</span> {String(p.defaultValue)}
+                    </div>
+                  )}
+                  {p.secure && (
+                    <div className="text-sm mt-1" style={{ color: 'var(--accent-warning)' }}>
+                      No default &mdash; supply at deployment time. Never commit secrets.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Outputs */}
+      {model && model.outputs.length > 0 && (
+        <div className="card mb-4" id="section-outputs">
+          <div className="card-header">Outputs ({model.outputs.length})</div>
+          <div className="project-list">
+            {model.outputs.map((o) => (
+              <div key={o.name} className="project-item">
+                <div className="flex-1">
+                  <div className="font-semibold">{o.name}</div>
+                  <div className="text-sm text-muted mt-1">{o.description}</div>
+                  <code className="text-sm">{o.valueExpression}</code>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Downloads bar */}
+      <div className="card mb-4" id="section-downloads">
+        <div className="card-header">Downloads</div>
+        <div className="flex gap-2 flex-wrap mt-2">
+          <button className="btn btn-secondary btn-sm" onClick={handleDownloadInstructions}>
+            {'\u{1F4DD}'} Learner Instructions (Markdown)
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={handleDownloadChecklist}>
+            {'\u{2705}'} Validation Checklist (Markdown)
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => downloadJson(`${safeName}.json`, exportProjectAsJson(project))}
+          >
+            {'\u{1F4E5}'} Project JSON
+          </button>
+        </div>
+      </div>
+
+      {/* Dedicated review hub */}
+      <div className="card mb-4" id="section-reviews">
+        <div className="card-header">Dedicated Reviews</div>
+        <p className="text-sm text-muted mt-2">
+          Deep-dive into security, cost, and deployment readiness with dedicated review engines.
+        </p>
+        <div className="flex gap-2 flex-wrap mt-2">
+          <Link to={`/review/${projectId}/security`} className="btn btn-secondary btn-sm">
+            {'\u{1F6E1}'} Security Review
+          </Link>
+          <Link to={`/review/${projectId}/cost`} className="btn btn-secondary btn-sm">
+            {'\u{1F4B0}'} Cost Review
+          </Link>
+          <Link to={`/review/${projectId}/deployment`} className="btn btn-secondary btn-sm">
+            {'\u{2705}'} Deployment Readiness
+          </Link>
+        </div>
       </div>
     </div>
   );
