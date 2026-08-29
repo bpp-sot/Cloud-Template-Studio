@@ -154,6 +154,25 @@ export default function Review() {
         </div>
       </div>
 
+      {/* Dedicated review hub */}
+      <div className="card mb-4">
+        <div className="card-header">Dedicated Reviews</div>
+        <p className="text-sm text-muted mt-2">
+          Deep-dive into security, cost, and deployment readiness with dedicated review engines.
+        </p>
+        <div className="flex gap-2 flex-wrap mt-2">
+          <Link to={`/review/${projectId}/security`} className="btn btn-secondary btn-sm">
+            {'\u{1F6E1}'} Security Review
+          </Link>
+          <Link to={`/review/${projectId}/cost`} className="btn btn-secondary btn-sm">
+            {'\u{1F4B0}'} Cost Review
+          </Link>
+          <Link to={`/review/${projectId}/deployment`} className="btn btn-secondary btn-sm">
+            {'\u{2705}'} Deployment Readiness
+          </Link>
+        </div>
+      </div>
+
       {/* Resource inventory */}
       {model && (
         <div className="card mb-4">

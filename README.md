@@ -89,10 +89,10 @@ Key directories:
 
 ## Delivery phases
 
-1. **Architecture & evidence** — shared model, catalogues, dependency engine, test harness _(current)_
+1. **Architecture & evidence** — shared model, catalogues, dependency engine, test harness
 2. **Azure MVP** — single VM: Bicep + ARM + review
-3. **AWS MVP** — single EC2: CloudFormation + review
-4. **Reviews & instructions** — security, cost, deployment checklist, learner Markdown
+3. **AWS MVP** — single EC2: CloudFormation + review + learner instructions + validation checklist
+4. **Dedicated reviews** — security review page, cost review page, deployment readiness gate _(current)_
 5. **Advanced resources** — storage, app hosting, serverless, containers, multi-machine, identities
 6. **Professional Mode & integration** — custom fragments, shared Lab Specification exchange
 

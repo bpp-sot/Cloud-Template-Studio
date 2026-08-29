@@ -44,6 +44,73 @@ test('creates a new template project and lists it', async ({ page }) => {
   await expect(page.getByText('Resource Inventory')).toBeVisible();
 });
 
+test('dedicated security review page is reachable from the review hub', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'New Template', exact: true }).click();
+  await page.getByPlaceholder('e.g. Azure Linux VM Lab').fill('E2E Security Lab');
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Add Virtual Machine' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Add Network' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Generate Templates' }).click();
+  await expect(page.getByRole('heading', { name: /Review & Download/i })).toBeVisible();
+  // Navigate to the dedicated security review
+  await page.getByRole('link', { name: /Security Review/ }).click();
+  await expect(page.getByRole('heading', { name: 'Security Review' })).toBeVisible();
+  await expect(page.getByText(/Overall Risk Assessment/i)).toBeVisible();
+});
+
+test('dedicated cost review page is reachable from the review hub', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'New Template', exact: true }).click();
+  await page.getByPlaceholder('e.g. Azure Linux VM Lab').fill('E2E Cost Lab');
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Add Virtual Machine' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Add Network' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Generate Templates' }).click();
+  await expect(page.getByRole('heading', { name: /Review & Download/i })).toBeVisible();
+  await page.getByRole('link', { name: /Cost Review/ }).click();
+  await expect(page.getByRole('heading', { name: 'Cost Review' })).toBeVisible();
+  await expect(page.getByText(/Overall Cost Risk/i)).toBeVisible();
+});
+
+test('dedicated deployment readiness page is reachable from the review hub', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'New Template', exact: true }).click();
+  await page.getByPlaceholder('e.g. Azure Linux VM Lab').fill('E2E Readiness Lab');
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Add Virtual Machine' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Add Network' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Generate Templates' }).click();
+  await expect(page.getByRole('heading', { name: /Review & Download/i })).toBeVisible();
+  await page.getByRole('link', { name: /Deployment Readiness/ }).click();
+  await expect(page.getByRole('heading', { name: 'Deployment Readiness' })).toBeVisible();
+  await expect(page.getByText(/Overall Readiness Status/i)).toBeVisible();
+});
+
 test('saved project appears on projects page', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: 'Projects', exact: true }).click();

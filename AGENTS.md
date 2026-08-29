@@ -37,16 +37,19 @@ directly. This keeps templates and instructions from drifting apart.
 ## Key Directories
 
 - `src/types/` — domain model: `evidence.ts`, `lab-specification.ts`, `catalogue.ts`,
-  `internal-model.ts`, `project.ts` (barrel: `index.ts`).
+  `internal-model.ts`, `project.ts`, `review.ts` (barrel: `index.ts`).
 - `src/data/` — normalised evidence catalogues (JSON): resource catalogues, patterns, regions,
   compute sizes, security/cost/naming rules, evidence index, source manifest, images.
 - `src/data-schemas/` — JSON Schemas validated in unit tests.
 - `src/lib/` — `data.ts` (typed catalogue access), `model/factory.ts`, `normalise/` (dependency
   engine + normaliser + azure-model + aws-model), `generators/azure/` (bicep, arm, parameters),
   `generators/aws/` (cloudformation-yaml, cloudformation-json, parameters), `instructions.ts`
-  (learner Markdown), `checklist.ts` (validation checklist), `storage.ts`, `secret-detector.ts`,
+  (learner Markdown), `checklist.ts` (validation checklist), `security-review.ts` (dedicated
+  security review engine), `cost-review.ts` (dedicated cost review engine),
+  `deployment-readiness.ts` (deployment readiness gate), `storage.ts`, `secret-detector.ts`,
   `theme.tsx`, `download.ts`, `app-info.ts`.
-- `src/components/`, `src/pages/` — UI.
+- `src/components/`, `src/pages/` — UI (includes `SecurityReviewPage.tsx`,
+  `CostReviewPage.tsx`, `DeploymentReadinessPage.tsx`).
 - `e2e/` — Playwright specs.
 
 ## Generator Independence

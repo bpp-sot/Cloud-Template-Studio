@@ -7,6 +7,9 @@ import Home from './pages/Home';
 import NewTemplate from './pages/NewTemplate';
 import Projects from './pages/Projects';
 import Review from './pages/Review';
+import SecurityReviewPage from './pages/SecurityReviewPage';
+import CostReviewPage from './pages/CostReviewPage';
+import DeploymentReadinessPage from './pages/DeploymentReadinessPage';
 import Explorer from './pages/Explorer';
 import Docs from './pages/Docs';
 import About from './pages/About';
@@ -66,6 +69,9 @@ export default function App() {
           <Route path="/new/:projectId" element={<NewTemplate />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/review/:projectId" element={<Review />} />
+          <Route path="/review/:projectId/security" element={<SecurityReviewPage />} />
+          <Route path="/review/:projectId/cost" element={<CostReviewPage />} />
+          <Route path="/review/:projectId/deployment" element={<DeploymentReadinessPage />} />
           <Route path="/explorer" element={<Explorer />} />
           <Route path="/docs" element={<Docs />} />
           <Route path="/about" element={<About />} />

@@ -5,3 +5,4 @@ export * from './lab-specification';
 export * from './catalogue';
 export * from './internal-model';
 export * from './project';
+export * from './review';
