@@ -170,12 +170,14 @@ describe('security review engine', () => {
     expect(total).toBe(review.items.length);
   });
 
-  it('is deterministic', () => {
+  it('is deterministic (excluding generatedAt)', () => {
     const spec = azureSpec({ publicIp: true });
     const model = buildInternalModel(spec);
     const a = generateSecurityReview(spec, model);
     const b = generateSecurityReview(spec, model);
-    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+    const { generatedAt: _ga, ...aRest } = a;
+    const { generatedAt: _gb, ...bRest } = b;
+    expect(JSON.stringify(aRest)).toBe(JSON.stringify(bRest));
   });
 
   it('renders to downloadable text', () => {
@@ -248,12 +250,14 @@ describe('cost review engine', () => {
     expect(review.items.some((i) => i.pricingCalculatorUrl.includes('calculator.aws'))).toBe(true);
   });
 
-  it('is deterministic', () => {
+  it('is deterministic (excluding generatedAt)', () => {
     const spec = azureSpec({ gpuSize: true });
     const model = buildInternalModel(spec);
     const a = generateCostReview(spec, model);
     const b = generateCostReview(spec, model);
-    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+    const { generatedAt: _ga, ...aRest } = a;
+    const { generatedAt: _gb, ...bRest } = b;
+    expect(JSON.stringify(aRest)).toBe(JSON.stringify(bRest));
   });
 
   it('renders to downloadable text', () => {
@@ -315,12 +319,14 @@ describe('deployment readiness engine', () => {
     expect(check?.status).toBe('pass');
   });
 
-  it('is deterministic', () => {
+  it('is deterministic (excluding generatedAt)', () => {
     const spec = azureSpec({});
     const model = buildInternalModel(spec);
     const a = generateDeploymentReadiness(spec, model);
     const b = generateDeploymentReadiness(spec, model);
-    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+    const { generatedAt: _ga, ...aRest } = a;
+    const { generatedAt: _gb, ...bRest } = b;
+    expect(JSON.stringify(aRest)).toBe(JSON.stringify(bRest));
   });
 
   it('renders to downloadable text', () => {

@@ -7,7 +7,7 @@ exports[`Azure ARM generator > produces valid, parseable ARM JSON with a secures
   "metadata": {
     "_generator": {
       "name": "SoT Cloud Template Studio",
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     "_note": "Generated independently from the InternalModel (not compiled from Bicep). Test in a non-production environment before Skillable use."
   },
