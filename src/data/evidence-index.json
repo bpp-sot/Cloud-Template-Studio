@@ -197,6 +197,160 @@
       "rationale": "Sensitive inputs are declared as secure parameters and are never embedded as literals in generated templates.",
       "confidence": "high",
       "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "az-managed-disk-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.Compute/disks — ARM template reference",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.compute/disks",
+      "sourcePath": "azure/templates/microsoft.compute/disks",
+      "rationale": "A standalone managed data disk attached to a VM. Distinct from the OS disk in the VM storageProfile.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "az-storage-account-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.Storage/storageAccounts — ARM template reference",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.storage/storageaccounts",
+      "sourcePath": "azure/templates/microsoft.storage/storageaccounts",
+      "rationale": "General-purpose Azure Storage Account for blobs, files, tables, and queues. Public access is disabled by default.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "az-managed-identity-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.ManagedIdentity/userAssignedIdentities — ARM template reference",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.managedidentity/userassignedidentities",
+      "sourcePath": "azure/templates/microsoft.managedidentity/userassignedidentities",
+      "rationale": "A user-assigned managed identity eliminates the need to store credentials in code or templates.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "az-app-service-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.Web/sites — ARM template reference (App Service)",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.web/sites",
+      "sourcePath": "azure/templates/microsoft.web/sites",
+      "rationale": "Azure App Service provides managed web application hosting with configurable runtime stacks.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "az-function-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.Web/sites (functionApp) — ARM template reference",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.web/sites",
+      "sourcePath": "azure/templates/microsoft.web/sites",
+      "rationale": "Azure Functions provides serverless compute with HTTP triggers and configurable runtimes.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "az-container-instance-doc",
+      "classification": "C",
+      "provider": "azure",
+      "sourceTitle": "Microsoft.ContainerInstance/containerGroups — ARM template reference",
+      "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.containerinstance/containergroups",
+      "sourcePath": "azure/templates/microsoft.containerinstance/containergroups",
+      "rationale": "Azure Container Instances provides fast, simple container execution without orchestration overhead.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-ebs-volume-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::EC2::Volume — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-volume.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-ec2-volume",
+      "rationale": "A standalone EBS volume that can be attached to an EC2 instance. Distinct from the root volume in the block device mapping.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-s3-bucket-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::S3::Bucket — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-bucket.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-s3-bucket",
+      "rationale": "S3 bucket for object storage. Public access is blocked by default per application safety constraint.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-iam-role-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::IAM::Role — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-iam-role",
+      "rationale": "An IAM role provides temporary credentials via STS without embedding long-lived keys.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-app-runner-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::AppRunner::Service — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apprunner-service.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-apprunner-service",
+      "rationale": "AWS App Runner provides fully managed web application hosting from container images.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-lambda-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::Lambda::Function — CloudFormation resource reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-lambda-function",
+      "rationale": "AWS Lambda provides serverless compute with configurable runtime, handler, memory, and timeout.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-ecs-fargate-doc",
+      "classification": "D",
+      "provider": "aws",
+      "sourceTitle": "AWS::ECS::Cluster / Service / TaskDefinition — CloudFormation reference",
+      "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html",
+      "sourcePath": "AWSCloudFormation/aws-resource-ecs-service",
+      "rationale": "AWS ECS with Fargate launch type provides serverless container execution without managing EC2 instances.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "safety-no-public-storage",
+      "classification": "E",
+      "provider": "neutral",
+      "sourceTitle": "Application safety constraint — storage public access blocked",
+      "sourceUrl": null,
+      "sourcePath": null,
+      "rationale": "Object storage (S3, Azure Storage Account) is generated with public access blocked unless the author explicitly opts in.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "safety-least-privilege-identity",
+      "classification": "E",
+      "provider": "neutral",
+      "sourceTitle": "Application safety constraint — least-privilege identity",
+      "sourceUrl": null,
+      "sourcePath": null,
+      "rationale": "Generated identities follow least-privilege principles. No wildcard permissions are added silently.",
+      "confidence": "high",
+      "reviewDate": "2026-08-29"
     }
   ]
 }

@@ -173,6 +173,70 @@ export interface IdentityRequirement {
   traceTo: string[];
 }
 
+/** Step 10b — App Hosting. Azure App Service / AWS App Runner (Phase 5). */
+export type AppHostingKind = 'azure-app-service' | 'aws-app-runner';
+
+export interface AppHostingRequirement {
+  id: string;
+  name: string;
+  kind: AppHostingKind;
+  /** Runtime stack, e.g. 'nodejs', 'python', 'dotnet', 'java'. */
+  runtime: string;
+  /** Source image or artifact reference (container image, zip, etc.). */
+  imageRef: string;
+  /** Opt-in only. Never enabled silently (Brief §3.4). */
+  publicEndpointRequested: boolean;
+  /** Environment variables (non-secret). Secrets must use secure parameters. */
+  environmentVariables: Array<{ key: string; value: string }>;
+  traceTo: string[];
+}
+
+/** Step 10c — Serverless. Azure Functions / AWS Lambda (Phase 5). */
+export type ServerlessKind = 'azure-function' | 'aws-lambda';
+
+export interface ServerlessRequirement {
+  id: string;
+  name: string;
+  kind: ServerlessKind;
+  /** Runtime, e.g. 'nodejs18.x', 'python3.11', 'dotnet6'. */
+  runtime: string;
+  /** Handler or entry point, e.g. 'index.handler' or 'Run'. */
+  handler: string;
+  /** Source artifact: zip URL, container image, or inline code reference. */
+  codeArtifact: string;
+  /** Memory in MB. */
+  memoryMb: number;
+  /** Timeout in seconds. */
+  timeoutSeconds: number;
+  /** Opt-in HTTP trigger. */
+  httpTriggerRequested: boolean;
+  /** Environment variables (non-secret). */
+  environmentVariables: Array<{ key: string; value: string }>;
+  traceTo: string[];
+}
+
+/** Step 10d — Containers. Azure Container Instances / AWS ECS Fargate (Phase 5). */
+export type ContainerKind = 'azure-container-instance' | 'aws-ecs-fargate';
+
+export interface ContainerRequirement {
+  id: string;
+  name: string;
+  kind: ContainerKind;
+  /** Container image reference, e.g. 'nginx:latest' or a private registry path. */
+  image: string;
+  /** CPU units (Azure: cores as decimal; AWS: CPU units, 1024 = 1 vCPU). */
+  cpu: number;
+  /** Memory in GB (Azure) or MB (AWS). */
+  memoryGb: number;
+  /** Container port to expose. */
+  port: number;
+  /** Opt-in public endpoint. */
+  publicEndpointRequested: boolean;
+  /** Environment variables (non-secret). */
+  environmentVariables: Array<{ key: string; value: string }>;
+  traceTo: string[];
+}
+
 export type InitScriptKind =
   'cloud-init' | 'azure-vm-extension' | 'aws-user-data' | 'powershell' | 'shell';
 
@@ -253,6 +317,9 @@ export interface LabSpecification {
   network: NetworkRequirement[];
   storage: StorageRequirement[];
   identity: IdentityRequirement[];
+  appHosting: AppHostingRequirement[];
+  serverless: ServerlessRequirement[];
+  containers: ContainerRequirement[];
   initialisation: InitialisationRequirement[];
   security: SecurityRequirement[];
   governance: GovernanceRequirement;

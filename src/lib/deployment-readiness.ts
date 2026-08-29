@@ -242,6 +242,28 @@ export function generateDeploymentReadiness(
       'This check is always present. Templates are not penetration-tested, deployment-confirmed, or Skillable-approved.',
   });
 
+  // ── Check 9: Professional Mode custom fragments (Phase 6) ──
+  const prof = spec.professional;
+  const fragmentCount = prof ? prof.azureFragments.length + prof.awsFragments.length : 0;
+  if (fragmentCount > 0) {
+    checks.push({
+      id: 'professional-fragments',
+      label: 'Custom fragments require manual review',
+      description:
+        'Custom (Classification F) fragments are user-supplied and are not validated against official evidence.',
+      status: 'warn',
+      detail: `${fragmentCount} custom fragment(s) present. Review for correctness, security, and duplicate identifiers before deployment.`,
+    });
+  } else {
+    checks.push({
+      id: 'no-professional-fragments',
+      label: 'No custom fragments',
+      description: 'No custom (Classification F) fragments were added.',
+      status: 'pass',
+      detail: 'All generated resources are evidence-backed.',
+    });
+  }
+
   const overallStatus = statusFromChecks(checks);
 
   const summary = [

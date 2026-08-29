@@ -5,7 +5,7 @@
 # must be tested in a non-production environment before Skillable use.
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'SoT Cloud Template Studio 0.2.0 — generated independently from the InternalModel. Test in a non-production environment before Skillable use.'
+Description: 'SoT Cloud Template Studio 0.3.0 — generated independently from the InternalModel. Test in a non-production environment before Skillable use.'
 
 Parameters:
   AdminUsername:

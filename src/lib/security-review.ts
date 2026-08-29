@@ -260,6 +260,134 @@ function analyseInitScripts(spec: LabSpecification): SecurityReviewItem[] {
   return items;
 }
 
+/** Analyse Phase 5 advanced resources for security posture. */
+function analyseAdvancedResources(spec: LabSpecification): SecurityReviewItem[] {
+  const items: SecurityReviewItem[] = [];
+
+  // Storage public access
+  for (const storage of spec.storage) {
+    if (!storage.publicAccessBlocked) {
+      items.push({
+        id: `sec-public-storage:${storage.id}`,
+        severity: 'high',
+        category: 'Public storage',
+        description: `Storage resource "${storage.name}" has public access enabled.`,
+        recommendation:
+          'Block public access unless the lab explicitly requires anonymous access, and document the justification.',
+        affectedResource: storage.name,
+        checkId: 'public-storage',
+        evidence: evidenceRefFromId('safety-no-public-storage'),
+      });
+    }
+  }
+
+  // Identity least-privilege reminders
+  for (const identity of spec.identity) {
+    items.push({
+      id: `sec-identity-review:${identity.id}`,
+      severity: 'info',
+      category: 'Identity',
+      description: `Identity "${identity.name}" (${identity.kind}) was created. Role assignments are not generated.`,
+      recommendation:
+        'Assign the minimum required permissions. Avoid wildcard or AdministratorAccess roles.',
+      affectedResource: identity.name,
+      checkId: 'identity-least-privilege',
+      evidence: evidenceRefFromId('safety-least-privilege-identity'),
+    });
+  }
+
+  // App hosting public endpoints
+  for (const app of spec.appHosting) {
+    if (app.publicEndpointRequested) {
+      items.push({
+        id: `sec-app-public:${app.id}`,
+        severity: 'medium',
+        category: 'Public endpoint',
+        description: `App hosting "${app.name}" has a public endpoint requested.`,
+        recommendation:
+          'Confirm public access is required. Add authentication and restrict access where possible.',
+        affectedResource: app.name,
+        checkId: 'app-public-endpoint',
+      });
+    }
+  }
+
+  // Serverless HTTP triggers
+  for (const fn of spec.serverless) {
+    if (fn.httpTriggerRequested) {
+      items.push({
+        id: `sec-function-http:${fn.id}`,
+        severity: 'medium',
+        category: 'Public endpoint',
+        description: `Serverless function "${fn.name}" has an HTTP trigger requested.`,
+        recommendation:
+          'Secure the endpoint with authentication. Avoid exposing unauthenticated functions.',
+        affectedResource: fn.name,
+        checkId: 'function-http-trigger',
+      });
+    }
+  }
+
+  // Container public endpoints
+  for (const ctr of spec.containers) {
+    if (ctr.publicEndpointRequested) {
+      items.push({
+        id: `sec-container-public:${ctr.id}`,
+        severity: 'medium',
+        category: 'Public endpoint',
+        description: `Container "${ctr.name}" has a public endpoint requested.`,
+        recommendation:
+          'Confirm public access is required. Restrict network access where possible.',
+        affectedResource: ctr.name,
+        checkId: 'container-public-endpoint',
+      });
+    }
+  }
+
+  return items;
+}
+
+/** Analyse Phase 6 Professional Mode custom fragments. */
+function analyseProfessionalFragments(spec: LabSpecification): SecurityReviewItem[] {
+  const items: SecurityReviewItem[] = [];
+  const prof = spec.professional;
+  if (!prof) return items;
+
+  const allFragments = [...prof.azureFragments, ...prof.awsFragments];
+  if (allFragments.length === 0) return items;
+
+  items.push({
+    id: 'sec-professional-fragments',
+    severity: 'medium',
+    category: 'Professional Mode addition',
+    description: `${allFragments.length} custom fragment(s) were added. These are Classification F (user-supplied) and are not validated against official evidence.`,
+    recommendation:
+      'Manually review each fragment for correctness, security, and duplicate identifiers before deployment.',
+    checkId: 'professional-fragments',
+  });
+
+  // Check for embedded secrets in fragments
+  for (let i = 0; i < allFragments.length; i++) {
+    const frag = allFragments[i];
+    if (
+      /(password|secret|apikey|access_key)\s*[:=]\s*['"][^'"]+['"]/i.test(frag) ||
+      /(password|secret)\s+\w+\s*=\s*['"][^'"]+['"]/i.test(frag)
+    ) {
+      items.push({
+        id: `sec-fragment-secret:${i}`,
+        severity: 'critical',
+        category: 'Embedded credentials',
+        description: `Custom fragment ${i + 1} may contain an embedded secret (password or secret literal).`,
+        recommendation:
+          'Remove the secret. Use a secure parameter or runtime secret store. Templates must never contain credentials.',
+        checkId: 'fragment-embedded-secret',
+      });
+    }
+  }
+
+  return items;
+}
+
 function generateSummary(
   spec: LabSpecification,
   items: SecurityReviewItem[],
@@ -300,6 +428,8 @@ export function generateSecurityReview(
     ...analyseModel(model),
     ...analyseParameters(model),
     ...analyseInitScripts(spec),
+    ...analyseAdvancedResources(spec),
+    ...analyseProfessionalFragments(spec),
   ];
 
   // Deduplicate by id

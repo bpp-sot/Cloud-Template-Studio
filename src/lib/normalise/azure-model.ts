@@ -12,17 +12,23 @@ import type {
   InternalModel,
   LabSpecification,
   NetworkRequirement,
-  ParameterDef,
   OutputDef,
+  ParameterDef,
   ReviewFinding,
 } from '@/types';
 import { findComputeSize, findResource, findAzureImage } from '@/lib/data';
 import { evidenceRefFromId, resolveDependencies } from './dependencies';
 import { findingFromCostRule, findingFromSecurityRule } from './findings';
 import type {
+  AzureAppServiceProps,
+  AzureContainerInstanceProps,
+  AzureFunctionProps,
   AzureImageReference,
+  AzureManagedDiskProps,
+  AzureManagedIdentityProps,
   AzureNsgSecurityRule,
   AzureResourceProps,
+  AzureStorageAccountProps,
 } from '@/lib/generators/azure/types';
 
 const API = {
@@ -32,6 +38,10 @@ const API = {
   nic: '2023-11-01',
   vm: '2024-07-01',
   storage: '2023-05-01',
+  disk: '2023-10-02',
+  identity: '2023-07-31-preview',
+  web: '2023-12-01',
+  containerInstance: '2023-05-01',
 } as const;
 
 const ADMIN_USERNAME_PARAM = 'adminUsername';
@@ -267,6 +277,7 @@ function buildCompute(
           apiVersion: API.storage,
           sku: 'Standard_LRS',
           purpose: 'boot-diagnostics',
+          allowBlobPublicAccess: false,
         } satisfies AzureResourceProps,
       },
     });
@@ -420,6 +431,294 @@ function buildCompute(
   return { resources, findings, outputs };
 }
 
+// ── Phase 5: Advanced resource builders ──
+
+function buildStorage(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const storage of spec.storage) {
+    if (storage.kind === 'azure-managed-disk') {
+      const catalogue = findResource('azure', 'azure-managed-disk');
+      const diskName = storage.name.replace(/[^a-z0-9_-]/gi, '-').toLowerCase();
+      const props: AzureManagedDiskProps = {
+        kind: 'managedDisk',
+        name: diskName,
+        apiVersion: API.disk,
+        sku: 'StandardSSD_LRS',
+        diskSizeGb: storage.sizeGb ?? 64,
+        attachedToVmLogicalId: null,
+      };
+      resources.push({
+        logicalId: storage.id,
+        providerResourceType: 'Microsoft.Compute/disks',
+        purpose: `Standalone managed data disk (${storage.sizeGb ?? 64} GB).`,
+        origin: 'user',
+        autoIncluded: false,
+        dependsOn: [],
+        evidence: catalogue?.evidence ?? [evidenceRefFromId('az-managed-disk-doc')],
+        apiVersionOrSpec: API.disk,
+        securityNotes: [
+          'Managed disks are encrypted at rest with platform-managed keys by default.',
+        ],
+        costNotes: [
+          `Incurs managed-disk storage cost for ${storage.sizeGb ?? 64} GB for the lab duration.`,
+        ],
+        warnings: [],
+        properties: { azure: props satisfies AzureResourceProps },
+      });
+    }
+
+    if (storage.kind === 'azure-storage-account') {
+      const catalogue = findResource('azure', 'azure-storage-account');
+      const accountName = storage.name
+        .replace(/[^a-z0-9]/gi, '')
+        .toLowerCase()
+        .slice(0, 24);
+      const props: AzureStorageAccountProps = {
+        kind: 'storageAccount',
+        name: accountName || 'labstorage',
+        apiVersion: API.storage,
+        sku: 'Standard_LRS',
+        purpose: 'general-purpose',
+        allowBlobPublicAccess: !storage.publicAccessBlocked,
+      };
+      resources.push({
+        logicalId: storage.id,
+        providerResourceType: 'Microsoft.Storage/storageAccounts',
+        purpose: `General-purpose storage account${storage.publicAccessBlocked ? ' (public access blocked)' : ' (public access enabled — review required)'}.`,
+        origin: 'user',
+        autoIncluded: false,
+        dependsOn: [],
+        evidence: catalogue?.evidence ?? [evidenceRefFromId('az-storage-account-doc')],
+        apiVersionOrSpec: API.storage,
+        securityNotes: [
+          storage.publicAccessBlocked
+            ? 'Public blob access is blocked. This is the secure default.'
+            : 'Public blob access is enabled. This is a security risk; confirm it is intentional.',
+        ],
+        costNotes: ['Incurs Storage Account transaction and capacity charges.'],
+        warnings: storage.publicAccessBlocked
+          ? []
+          : ['Public access is enabled on this storage account.'],
+        properties: { azure: props satisfies AzureResourceProps },
+      });
+
+      if (!storage.publicAccessBlocked) {
+        const sec = findingFromSecurityRule('sec-public-storage', storage.id);
+        if (sec) findings.push(sec);
+      }
+    }
+  }
+
+  return { resources, findings };
+}
+
+function buildIdentity(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const identity of spec.identity) {
+    if (identity.kind !== 'azure-managed-identity') continue;
+    const catalogue = findResource('azure', 'azure-managed-identity');
+    const idName = identity.name.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+    const props: AzureManagedIdentityProps = {
+      kind: 'managedIdentity',
+      name: idName,
+      apiVersion: API.identity,
+      purpose: identity.purpose,
+    };
+    resources.push({
+      logicalId: identity.id,
+      providerResourceType: 'Microsoft.ManagedIdentity/userAssignedIdentities',
+      purpose: `User-assigned managed identity: ${identity.purpose}`,
+      origin: 'user',
+      autoIncluded: false,
+      dependsOn: [],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('az-managed-identity-doc')],
+      apiVersionOrSpec: API.identity,
+      securityNotes: [
+        'Eliminates embedded credentials. Role assignments must be configured separately.',
+      ],
+      costNotes: ['No direct charge for the managed identity.'],
+      warnings: [
+        'Role assignments must be configured separately; this tool generates the identity resource only.',
+      ],
+      properties: { azure: props satisfies AzureResourceProps },
+    });
+    findings.push({
+      id: `identity-least-privilege:${identity.id}`,
+      kind: 'security',
+      severity: 'info',
+      category: 'Identity',
+      description: `Managed identity "${identity.name}" was created. Role assignments are not generated.`,
+      recommendation:
+        'Assign the minimum required roles to this identity. Avoid Owner or broad Contributor roles.',
+      affectedResource: identity.id,
+      evidence: evidenceRefFromId('safety-least-privilege-identity'),
+    });
+  }
+
+  return { resources, findings };
+}
+
+function buildAppHosting(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const app of spec.appHosting) {
+    if (app.kind !== 'azure-app-service') continue;
+    const catalogue = findResource('azure', 'azure-app-service');
+    const appName = app.name.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+    const props: AzureAppServiceProps = {
+      kind: 'appService',
+      name: appName,
+      apiVersion: API.web,
+      runtime: app.runtime,
+      imageRef: app.imageRef,
+      publicEndpointRequested: app.publicEndpointRequested,
+      environmentVariables: app.environmentVariables,
+    };
+    resources.push({
+      logicalId: app.id,
+      providerResourceType: 'Microsoft.Web/sites',
+      purpose: `Azure App Service hosting a ${app.runtime} web application.`,
+      origin: 'user',
+      autoIncluded: false,
+      dependsOn: [],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('az-app-service-doc')],
+      apiVersionOrSpec: API.web,
+      securityNotes: [
+        app.publicEndpointRequested
+          ? 'Public endpoint is enabled. Restrict access as needed.'
+          : 'No public endpoint requested; private access only.',
+      ],
+      costNotes: [
+        'App Service Plan pricing tier affects cost. Free/Shared tiers have limited features.',
+      ],
+      warnings: [],
+      properties: { azure: props satisfies AzureResourceProps },
+    });
+
+    if (app.publicEndpointRequested) {
+      const sec = findingFromSecurityRule('sec-public-ip', app.id);
+      if (sec) findings.push(sec);
+    }
+  }
+
+  return { resources, findings };
+}
+
+function buildServerless(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const fn of spec.serverless) {
+    if (fn.kind !== 'azure-function') continue;
+    const catalogue = findResource('azure', 'azure-function');
+    const fnName = fn.name.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+    const props: AzureFunctionProps = {
+      kind: 'functionApp',
+      name: fnName,
+      apiVersion: API.web,
+      runtime: fn.runtime,
+      handler: fn.handler,
+      codeArtifact: fn.codeArtifact,
+      memoryMb: fn.memoryMb,
+      timeoutSeconds: fn.timeoutSeconds,
+      httpTriggerRequested: fn.httpTriggerRequested,
+      environmentVariables: fn.environmentVariables,
+    };
+    resources.push({
+      logicalId: fn.id,
+      providerResourceType: 'Microsoft.Web/sites (functionApp)',
+      purpose: `Azure Functions app (${fn.runtime}) with ${fn.memoryMb} MB memory and ${fn.timeoutSeconds}s timeout.`,
+      origin: 'user',
+      autoIncluded: false,
+      dependsOn: [],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('az-function-doc')],
+      apiVersionOrSpec: API.web,
+      securityNotes: [
+        fn.httpTriggerRequested
+          ? 'HTTP trigger is enabled. Secure the endpoint with authentication.'
+          : 'No HTTP trigger; function is invoked by other triggers only.',
+      ],
+      costNotes: ['Consumption plan charges per execution. Cold start latency applies.'],
+      warnings: [],
+      properties: { azure: props satisfies AzureResourceProps },
+    });
+
+    if (fn.httpTriggerRequested) {
+      const sec = findingFromSecurityRule('sec-public-ip', fn.id);
+      if (sec) findings.push(sec);
+    }
+  }
+
+  return { resources, findings };
+}
+
+function buildContainers(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const ctr of spec.containers) {
+    if (ctr.kind !== 'azure-container-instance') continue;
+    const catalogue = findResource('azure', 'azure-container-instance');
+    const ctrName = ctr.name.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+    const props: AzureContainerInstanceProps = {
+      kind: 'containerInstance',
+      name: ctrName,
+      apiVersion: API.containerInstance,
+      image: ctr.image,
+      cpuCores: ctr.cpu,
+      memoryGb: ctr.memoryGb,
+      port: ctr.port,
+      publicEndpointRequested: ctr.publicEndpointRequested,
+      environmentVariables: ctr.environmentVariables,
+    };
+    resources.push({
+      logicalId: ctr.id,
+      providerResourceType: 'Microsoft.ContainerInstance/containerGroups',
+      purpose: `Azure Container Instance running ${ctr.image} (${ctr.cpu} CPU, ${ctr.memoryGb} GB RAM).`,
+      origin: 'user',
+      autoIncluded: false,
+      dependsOn: [],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('az-container-instance-doc')],
+      apiVersionOrSpec: API.containerInstance,
+      securityNotes: [
+        ctr.publicEndpointRequested
+          ? 'Public port is exposed. Restrict access as needed.'
+          : 'No public endpoint; private access only.',
+      ],
+      costNotes: ['Charges per second while the container group is running.'],
+      warnings: [],
+      properties: { azure: props satisfies AzureResourceProps },
+    });
+
+    if (ctr.publicEndpointRequested) {
+      const sec = findingFromSecurityRule('sec-public-ip', ctr.id);
+      if (sec) findings.push(sec);
+    }
+  }
+
+  return { resources, findings };
+}
+
 export function buildAzureModel(spec: LabSpecification): InternalModel {
   const resources: GeneratedResource[] = [];
   const findings: ReviewFinding[] = [];
@@ -431,6 +730,27 @@ export function buildAzureModel(spec: LabSpecification): InternalModel {
     findings.push(...built.findings);
     outputs.push(...built.outputs);
   });
+
+  // Phase 5: Advanced resources.
+  const storage = buildStorage(spec);
+  resources.push(...storage.resources);
+  findings.push(...storage.findings);
+
+  const identity = buildIdentity(spec);
+  resources.push(...identity.resources);
+  findings.push(...identity.findings);
+
+  const appHosting = buildAppHosting(spec);
+  resources.push(...appHosting.resources);
+  findings.push(...appHosting.findings);
+
+  const serverless = buildServerless(spec);
+  resources.push(...serverless.resources);
+  findings.push(...serverless.findings);
+
+  const containers = buildContainers(spec);
+  resources.push(...containers.resources);
+  findings.push(...containers.findings);
 
   // Network-level findings (open CIDR / management ports).
   for (const net of spec.network) {

@@ -8,10 +8,16 @@
 import type { GeneratedResource, InternalModel, ParameterDef } from '@/types';
 import { APP_INFO } from '@/lib/app-info';
 import type {
+  AwsAppRunnerProps,
+  AwsEbsVolumeProps,
+  AwsEcsFargateProps,
+  AwsIamRoleProps,
   AwsInstanceProps,
   AwsInternetGatewayProps,
+  AwsLambdaProps,
   AwsResourceProps,
   AwsRouteTableProps,
+  AwsS3BucketProps,
   AwsSecurityGroupProps,
   AwsSubnetProps,
   AwsVpcProps,
@@ -129,6 +135,121 @@ function instanceResource(p: AwsInstanceProps): Record<string, unknown> {
   return { Type: 'AWS::EC2::Instance', Properties: props };
 }
 
+// ── Phase 5: Advanced resource renderers ──
+
+function ebsVolumeResource(p: AwsEbsVolumeProps): Record<string, unknown> {
+  return {
+    Type: 'AWS::EC2::Volume',
+    Properties: {
+      Size: p.sizeGb,
+      VolumeType: p.volumeType,
+      Encrypted: p.encrypted,
+      Tags: [{ Key: 'Name', Value: p.logicalName }],
+    },
+  };
+}
+
+function s3BucketResource(p: AwsS3BucketProps): Record<string, unknown> {
+  const props: Record<string, unknown> = {
+    PublicAccessBlockConfiguration: {
+      BlockPublicAcls: p.publicAccessBlocked,
+      BlockPublicPolicy: p.publicAccessBlocked,
+      IgnorePublicAcls: p.publicAccessBlocked,
+      RestrictPublicBuckets: p.publicAccessBlocked,
+    },
+  };
+  if (p.bucketEncryption) {
+    props.BucketEncryption = {
+      ServerSideEncryptionConfiguration: [
+        { ServerSideEncryptionByDefault: { SSEAlgorithm: 'AES256' } },
+      ],
+    };
+  }
+  return { Type: 'AWS::S3::Bucket', Properties: props };
+}
+
+function iamRoleResource(p: AwsIamRoleProps): Record<string, unknown> {
+  return {
+    Type: 'AWS::IAM::Role',
+    Properties: {
+      AssumeRolePolicyDocument: p.assumeRolePolicyDocument,
+      RoleName: p.logicalName,
+    },
+  };
+}
+
+function appRunnerResource(p: AwsAppRunnerProps): Record<string, unknown> {
+  return {
+    Type: 'AWS::AppRunner::Service',
+    Properties: {
+      ServiceName: p.logicalName,
+      SourceType: 'ECR',
+      ImageRepository: {
+        ImageIdentifier: p.imageRef,
+        ImageRepositoryType: 'ECR_PUBLIC',
+      },
+    },
+  };
+}
+
+function lambdaResource(p: AwsLambdaProps): Record<string, unknown> {
+  const props: Record<string, unknown> = {
+    Runtime: p.runtime,
+    Handler: p.handler,
+    Code: { ZipFile: p.codeArtifact },
+    MemorySize: p.memoryMb,
+    Timeout: p.timeoutSeconds,
+    Role: p.executionRoleLogicalId ? { 'Fn::GetAtt': [p.executionRoleLogicalId, 'Arn'] } : '',
+  };
+  if (p.environmentVariables.length > 0) {
+    props.Environment = {
+      Variables: Object.fromEntries(p.environmentVariables.map((e) => [e.key, e.value])),
+    };
+  }
+  return { Type: 'AWS::Lambda::Function', Properties: props };
+}
+
+function ecsClusterResource(p: AwsEcsFargateProps): Record<string, unknown> {
+  return { Type: 'AWS::ECS::Cluster', Properties: { ClusterName: p.logicalName } };
+}
+
+function ecsTaskDefResource(p: AwsEcsFargateProps): Record<string, unknown> {
+  return {
+    Type: 'AWS::ECS::TaskDefinition',
+    Properties: {
+      Family: p.logicalName,
+      NetworkMode: 'awsvpc',
+      RequiresCompatibilities: ['FARGATE'],
+      Cpu: String(p.cpu),
+      Memory: String(p.memoryMb),
+      ExecutionRoleArn: p.executionRoleLogicalId
+        ? { 'Fn::GetAtt': [p.executionRoleLogicalId, 'Arn'] }
+        : '',
+      ContainerDefinitions: [
+        {
+          Name: p.logicalName,
+          Image: p.image,
+          PortMappings: [{ ContainerPort: p.port }],
+          Environment: p.environmentVariables.map((e) => ({ Name: e.key, Value: e.value })),
+        },
+      ],
+    },
+  };
+}
+
+function ecsServiceResource(p: AwsEcsFargateProps): Record<string, unknown> {
+  return {
+    Type: 'AWS::ECS::Service',
+    Properties: {
+      ServiceName: p.logicalName,
+      Cluster: { Ref: `${p.logicalName}Cluster` },
+      TaskDefinition: { Ref: `${p.logicalName}TaskDef` },
+      LaunchType: 'FARGATE',
+      DesiredCount: 1,
+    },
+  };
+}
+
 function resourceObject(r: GeneratedResource): Record<string, unknown> | null {
   const p = awsProps(r);
   if (!p || p.kind === 'ebsRoot') return null;
@@ -145,6 +266,21 @@ function resourceObject(r: GeneratedResource): Record<string, unknown> | null {
       return routeTableResource(p);
     case 'instance':
       return instanceResource(p);
+    case 'ebsVolume':
+      return ebsVolumeResource(p);
+    case 's3Bucket':
+      return s3BucketResource(p);
+    case 'iamRole':
+      return iamRoleResource(p);
+    case 'appRunner':
+      return appRunnerResource(p);
+    case 'lambda':
+      return lambdaResource(p);
+    case 'ecsFargate': {
+      if (r.providerResourceType === 'AWS::ECS::Cluster') return ecsClusterResource(p);
+      if (r.providerResourceType === 'AWS::ECS::TaskDefinition') return ecsTaskDefResource(p);
+      return ecsServiceResource(p);
+    }
   }
 }
 
@@ -158,7 +294,7 @@ function outputValue(expr: string): unknown {
   return expr;
 }
 
-export function generateCloudFormationJson(model: InternalModel): string {
+export function generateCloudFormationJson(model: InternalModel, fragments: string[] = []): string {
   const resources: Record<string, unknown> = {};
   for (const r of model.resources) {
     const obj = resourceObject(r);
@@ -194,6 +330,41 @@ export function generateCloudFormationJson(model: InternalModel): string {
           SubnetId: ref(p.subnetLogicalId),
         },
       };
+    }
+  }
+
+  // Phase 6: Inject custom fragments (Classification F) with boundary markers.
+  if (fragments.length > 0) {
+    for (let i = 0; i < fragments.length; i++) {
+      const frag = fragments[i].trim();
+      try {
+        const parsed = JSON.parse(frag);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          if (parsed.Resources && typeof parsed.Resources === 'object') {
+            for (const [key, value] of Object.entries(parsed.Resources)) {
+              resources[`CustomFragment${i + 1}_${key}`] = {
+                ...(value as Record<string, unknown>),
+                _classification: 'F',
+                _fragmentIndex: i + 1,
+                _warning: 'User-supplied custom fragment — requires manual review',
+              };
+            }
+          } else {
+            resources[`CustomFragment${i + 1}`] = {
+              ...parsed,
+              _classification: 'F',
+              _fragmentIndex: i + 1,
+              _warning: 'User-supplied custom fragment — requires manual review',
+            };
+          }
+        }
+      } catch {
+        resources[`CustomFragment${i + 1}_Error`] = {
+          _classification: 'F',
+          _fragmentIndex: i + 1,
+          _error: 'Fragment is not valid JSON and was not injected as a resource',
+        };
+      }
     }
   }
 

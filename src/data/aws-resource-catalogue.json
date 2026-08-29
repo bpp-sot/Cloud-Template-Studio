@@ -134,6 +134,280 @@
       "documentationUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html",
       "schemaOrApiVersion": "2010-09-09",
       "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "aws-ebs-volume",
+      "provider": "aws",
+      "resourceType": "AWS::EC2::Volume",
+      "category": "Storage",
+      "supportedProperties": ["Size", "VolumeType", "Encrypted", "AvailabilityZone", "Tags"],
+      "defaults": { "VolumeType": "gp3", "Encrypted": true },
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "none",
+        "identity": "low",
+        "network": "low",
+        "cost": "medium"
+      },
+      "costSensitivity": "medium",
+      "evidence": [
+        {
+          "classification": "D",
+          "sourceTitle": "AWS::EC2::Volume — CloudFormation resource reference",
+          "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-volume.html",
+          "sourcePath": "AWSCloudFormation/aws-resource-ec2-volume",
+          "rationale": "A standalone EBS volume that can be attached to an EC2 instance.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2010-09-09"
+        }
+      ],
+      "limitations": ["EBS volumes are region-specific; verify availability zone compatibility."],
+      "documentationUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-volume.html",
+      "schemaOrApiVersion": "2010-09-09",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-s3-bucket",
+      "provider": "aws",
+      "resourceType": "AWS::S3::Bucket",
+      "category": "Storage",
+      "supportedProperties": [
+        "BucketName",
+        "PublicAccessBlockConfiguration",
+        "BucketEncryption",
+        "VersioningConfiguration",
+        "LifecycleConfiguration"
+      ],
+      "defaults": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            { "ServerSideEncryptionByDefault": { "SSEAlgorithm": "AES256" } }
+          ]
+        }
+      },
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "low",
+        "network": "low",
+        "cost": "low"
+      },
+      "costSensitivity": "low",
+      "evidence": [
+        {
+          "classification": "D",
+          "sourceTitle": "AWS::S3::Bucket — CloudFormation resource reference",
+          "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-bucket.html",
+          "sourcePath": "AWSCloudFormation/aws-resource-s3-bucket",
+          "rationale": "S3 bucket for object storage. Public access is blocked by default.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2010-09-09"
+        }
+      ],
+      "limitations": ["Bucket names must be globally unique and DNS-compliant."],
+      "documentationUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-bucket.html",
+      "schemaOrApiVersion": "2010-09-09",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-iam-role",
+      "provider": "aws",
+      "resourceType": "AWS::IAM::Role",
+      "category": "Identity",
+      "supportedProperties": [
+        "AssumeRolePolicyDocument",
+        "ManagedPolicyArns",
+        "Policies",
+        "RoleName",
+        "Tags"
+      ],
+      "defaults": {},
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "none",
+        "identity": "medium",
+        "network": "none",
+        "cost": "low"
+      },
+      "costSensitivity": "low",
+      "evidence": [
+        {
+          "classification": "D",
+          "sourceTitle": "AWS::IAM::Role — CloudFormation resource reference",
+          "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html",
+          "sourcePath": "AWSCloudFormation/aws-resource-iam-role",
+          "rationale": "An IAM role provides temporary credentials without embedding long-lived keys.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2010-09-09"
+        }
+      ],
+      "limitations": [
+        "Generated role has a minimal trust policy; permissions must be reviewed and scoped to least privilege."
+      ],
+      "documentationUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html",
+      "schemaOrApiVersion": "2010-09-09",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-app-runner",
+      "provider": "aws",
+      "resourceType": "AWS::AppRunner::Service",
+      "category": "AppHosting",
+      "supportedProperties": [
+        "ServiceName",
+        "SourceType",
+        "ImageRepository",
+        "InstanceConfiguration",
+        "NetworkConfiguration"
+      ],
+      "defaults": { "SourceType": "ECR" },
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "medium",
+        "network": "medium",
+        "cost": "medium"
+      },
+      "costSensitivity": "medium",
+      "evidence": [
+        {
+          "classification": "D",
+          "sourceTitle": "AWS::AppRunner::Service — CloudFormation resource reference",
+          "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apprunner-service.html",
+          "sourcePath": "AWSCloudFormation/aws-resource-apprunner-service",
+          "rationale": "AWS App Runner provides fully managed web application hosting from container images.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2010-09-09"
+        }
+      ],
+      "limitations": [
+        "App Runner availability varies by region; verify support in the target region."
+      ],
+      "documentationUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apprunner-service.html",
+      "schemaOrApiVersion": "2010-09-09",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-lambda",
+      "provider": "aws",
+      "resourceType": "AWS::Lambda::Function",
+      "category": "Serverless",
+      "supportedProperties": [
+        "Runtime",
+        "Handler",
+        "Code",
+        "MemorySize",
+        "Timeout",
+        "Environment",
+        "Role"
+      ],
+      "defaults": { "MemorySize": 128, "Timeout": 30 },
+      "dependencies": [
+        {
+          "identifier": "aws-lambda-role",
+          "provider": "aws",
+          "resourceType": "AWS::IAM::Role",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "provider-required",
+          "reason": "A Lambda function requires an execution role to assume when invoked.",
+          "evidenceClassification": "D",
+          "evidenceReference": "aws-iam-role-doc",
+          "securityImpact": "The execution role grants permissions to the function; scope to least privilege.",
+          "costImpact": "No direct charge for the IAM role.",
+          "userSelectable": false
+        }
+      ],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "medium",
+        "network": "low",
+        "cost": "low"
+      },
+      "costSensitivity": "low",
+      "evidence": [
+        {
+          "classification": "D",
+          "sourceTitle": "AWS::Lambda::Function — CloudFormation resource reference",
+          "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html",
+          "sourcePath": "AWSCloudFormation/aws-resource-lambda-function",
+          "rationale": "AWS Lambda provides serverless compute with configurable runtime, handler, memory, and timeout.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2010-09-09"
+        }
+      ],
+      "limitations": [
+        "Lambda runtime deprecation schedule must be checked; verify runtime support in the target region."
+      ],
+      "documentationUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html",
+      "schemaOrApiVersion": "2010-09-09",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "aws-ecs-fargate",
+      "provider": "aws",
+      "resourceType": "AWS::ECS::Cluster",
+      "category": "Containers",
+      "supportedProperties": [
+        "ClusterName",
+        "Service",
+        "TaskDefinition",
+        "LaunchType",
+        "NetworkConfiguration"
+      ],
+      "defaults": { "LaunchType": "FARGATE" },
+      "dependencies": [
+        {
+          "identifier": "aws-ecs-task-execution-role",
+          "provider": "aws",
+          "resourceType": "AWS::IAM::Role",
+          "required": true,
+          "autoIncluded": true,
+          "origin": "provider-required",
+          "reason": "A Fargate task requires an execution role to pull images and publish logs.",
+          "evidenceClassification": "D",
+          "evidenceReference": "aws-iam-role-doc",
+          "securityImpact": "The task execution role grants container pull and log permissions; scope to least privilege.",
+          "costImpact": "No direct charge for the IAM role.",
+          "userSelectable": false
+        }
+      ],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "medium",
+        "network": "medium",
+        "cost": "medium"
+      },
+      "costSensitivity": "medium",
+      "evidence": [
+        {
+          "classification": "D",
+          "sourceTitle": "AWS::ECS::Cluster / Service / TaskDefinition — CloudFormation reference",
+          "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html",
+          "sourcePath": "AWSCloudFormation/aws-resource-ecs-service",
+          "rationale": "AWS ECS with Fargate launch type provides serverless container execution.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2010-09-09"
+        }
+      ],
+      "limitations": [
+        "Fargate availability varies by region; verify CPU and memory configuration support."
+      ],
+      "documentationUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html",
+      "schemaOrApiVersion": "2010-09-09",
+      "reviewDate": "2026-08-29"
     }
   ]
 }

@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { loadProject, exportProjectAsJson } from '@/lib/storage';
+import { exportForPolicyStudioAsJson } from '@/lib/policy-studio-export';
 import { copyToClipboard, downloadText, downloadJson } from '@/lib/download';
 import { generateLearnerInstructions } from '@/lib/instructions';
 import { generateValidationChecklist } from '@/lib/checklist';
@@ -405,6 +406,18 @@ export default function Review() {
             onClick={() => downloadJson(`${safeName}.json`, exportProjectAsJson(project))}
           >
             {'\u{1F4E5}'} Project JSON
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() =>
+              downloadJson(
+                `${safeName}-policy-studio.json`,
+                exportForPolicyStudioAsJson(project.wizard.spec),
+              )
+            }
+            title="Export provider-neutral Lab Specification for SoT Policy Studio"
+          >
+            {'\u{1F504}'} Policy Studio Export
           </button>
         </div>
       </div>

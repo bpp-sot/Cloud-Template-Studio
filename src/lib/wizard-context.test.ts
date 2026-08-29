@@ -73,6 +73,9 @@ describe('lab specification shape', () => {
     expect(spec.network).toEqual([]);
     expect(spec.storage).toEqual([]);
     expect(spec.identity).toEqual([]);
+    expect(spec.appHosting).toEqual([]);
+    expect(spec.serverless).toEqual([]);
+    expect(spec.containers).toEqual([]);
     expect(spec.initialisation).toEqual([]);
     expect(spec.security).toEqual([]);
     expect(spec.learningPurpose.outcomes).toEqual([]);

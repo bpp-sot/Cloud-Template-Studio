@@ -28,7 +28,16 @@ export function saveProject(project: TemplateProject): void {
 export function loadProject(id: string): TemplateProject | null {
   try {
     const raw = localStorage.getItem(`${STORAGE_PREFIX}${id}`);
-    return raw ? (JSON.parse(raw) as TemplateProject) : null;
+    if (!raw) return null;
+    const project = JSON.parse(raw) as TemplateProject;
+    // Backward compatibility: ensure Phase 5 arrays exist on older saved projects.
+    const spec = project.wizard?.spec;
+    if (spec) {
+      if (!spec.appHosting) spec.appHosting = [];
+      if (!spec.serverless) spec.serverless = [];
+      if (!spec.containers) spec.containers = [];
+    }
+    return project;
   } catch {
     return null;
   }

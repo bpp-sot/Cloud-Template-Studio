@@ -1,10 +1,10 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "SoT Cloud Template Studio 0.2.0 — generated independently from the InternalModel. Test in a non-production environment before Skillable use.",
+  "Description": "SoT Cloud Template Studio 0.3.0 — generated independently from the InternalModel. Test in a non-production environment before Skillable use.",
   "Metadata": {
     "_generator": {
       "name": "SoT Cloud Template Studio",
-      "version": "0.2.0"
+      "version": "0.3.0"
     },
     "_note": "Generated independently from the InternalModel (not converted from YAML). Test in a non-production environment before Skillable use."
   },

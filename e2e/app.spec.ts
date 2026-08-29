@@ -36,6 +36,13 @@ test('creates a new template project and lists it', async ({ page }) => {
   // Networking step — add a network
   await page.getByRole('button', { name: 'Add Network' }).click();
   await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Phase 5/6 steps: Storage, Identity, App Hosting, Serverless, Containers, Professional
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
   // Init step
   await page.getByRole('button', { name: 'Next \u2192' }).click();
   // Review step — generate
@@ -58,7 +65,16 @@ test('dedicated security review page is reachable from the review hub', async ({
   await page.getByRole('button', { name: 'Next \u2192' }).click();
   await page.getByRole('button', { name: 'Add Network' }).click();
   await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Phase 5/6 steps: Storage, Identity, App Hosting, Serverless, Containers, Professional
   await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Init step
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Review step — generate
   await page.getByRole('button', { name: 'Generate Templates' }).click();
   await expect(page.getByRole('heading', { name: /Review & Download/i })).toBeVisible();
   // Navigate to the dedicated security review
@@ -81,7 +97,16 @@ test('dedicated cost review page is reachable from the review hub', async ({ pag
   await page.getByRole('button', { name: 'Next \u2192' }).click();
   await page.getByRole('button', { name: 'Add Network' }).click();
   await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Phase 5/6 steps: Storage, Identity, App Hosting, Serverless, Containers, Professional
   await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Init step
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Review step — generate
   await page.getByRole('button', { name: 'Generate Templates' }).click();
   await expect(page.getByRole('heading', { name: /Review & Download/i })).toBeVisible();
   await page.getByRole('link', { name: /Cost Review/ }).click();
@@ -103,7 +128,16 @@ test('dedicated deployment readiness page is reachable from the review hub', asy
   await page.getByRole('button', { name: 'Next \u2192' }).click();
   await page.getByRole('button', { name: 'Add Network' }).click();
   await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Phase 5/6 steps: Storage, Identity, App Hosting, Serverless, Containers, Professional
   await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Init step
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Review step — generate
   await page.getByRole('button', { name: 'Generate Templates' }).click();
   await expect(page.getByRole('heading', { name: /Review & Download/i })).toBeVisible();
   await page.getByRole('link', { name: /Deployment Readiness/ }).click();
@@ -138,6 +172,13 @@ test('completes the AWS CloudFormation journey', async ({ page }) => {
   await page.getByRole('button', { name: 'Next \u2192' }).click();
   // Networking step — add a network
   await page.getByRole('button', { name: 'Add Network' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  // Phase 5/6 steps: Storage, Identity, App Hosting, Serverless, Containers, Professional
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
+  await page.getByRole('button', { name: 'Next \u2192' }).click();
   await page.getByRole('button', { name: 'Next \u2192' }).click();
   // Init step
   await page.getByRole('button', { name: 'Next \u2192' }).click();

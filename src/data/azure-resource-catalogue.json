@@ -132,6 +132,244 @@
       "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.compute/virtualmachines",
       "schemaOrApiVersion": "2024-07-01",
       "reviewDate": "2026-08-28"
+    },
+    {
+      "id": "azure-managed-disk",
+      "provider": "azure",
+      "resourceType": "Microsoft.Compute/disks",
+      "category": "Storage",
+      "supportedProperties": [
+        "sku.name",
+        "creationData.createOption",
+        "diskSizeGB",
+        "encryptionSettings"
+      ],
+      "defaults": { "sku": "StandardSSD_LRS", "createOption": "Empty" },
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "none",
+        "identity": "low",
+        "network": "low",
+        "cost": "medium"
+      },
+      "costSensitivity": "medium",
+      "evidence": [
+        {
+          "classification": "C",
+          "sourceTitle": "Microsoft.Compute/disks — ARM template reference",
+          "sourcePath": "azure/templates/microsoft.compute/disks",
+          "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.compute/disks",
+          "rationale": "A standalone managed data disk that can be attached to a VM.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2023-10-02"
+        }
+      ],
+      "limitations": [
+        "Disk SKU availability varies by region; this tool cannot confirm live availability."
+      ],
+      "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.compute/disks",
+      "schemaOrApiVersion": "2023-10-02",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "azure-storage-account",
+      "provider": "azure",
+      "resourceType": "Microsoft.Storage/storageAccounts",
+      "category": "Storage",
+      "supportedProperties": [
+        "sku.name",
+        "kind",
+        "allowBlobPublicAccess",
+        "minimumTlsVersion",
+        "networkAcls"
+      ],
+      "defaults": {
+        "sku": "Standard_LRS",
+        "kind": "StorageV2",
+        "allowBlobPublicAccess": false,
+        "minimumTlsVersion": "TLS1_2"
+      },
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "low",
+        "network": "medium",
+        "cost": "low"
+      },
+      "costSensitivity": "low",
+      "evidence": [
+        {
+          "classification": "C",
+          "sourceTitle": "Microsoft.Storage/storageAccounts — ARM template reference",
+          "sourcePath": "azure/templates/microsoft.storage/storageaccounts",
+          "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.storage/storageaccounts",
+          "rationale": "General-purpose Azure Storage Account. Public access is disabled by default.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2023-05-01"
+        }
+      ],
+      "limitations": [
+        "Storage account names must be globally unique and 3-24 lowercase alphanumeric characters."
+      ],
+      "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.storage/storageaccounts",
+      "schemaOrApiVersion": "2023-05-01",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "azure-managed-identity",
+      "provider": "azure",
+      "resourceType": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "category": "Identity",
+      "supportedProperties": ["location", "tags"],
+      "defaults": {},
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "none",
+        "identity": "medium",
+        "network": "none",
+        "cost": "low"
+      },
+      "costSensitivity": "low",
+      "evidence": [
+        {
+          "classification": "C",
+          "sourceTitle": "Microsoft.ManagedIdentity/userAssignedIdentities — ARM template reference",
+          "sourcePath": "azure/templates/microsoft.managedidentity/userassignedidentities",
+          "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.managedidentity/userassignedidentities",
+          "rationale": "A user-assigned managed identity eliminates embedded credentials.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2023-07-31-preview"
+        }
+      ],
+      "limitations": [
+        "Role assignments must be configured separately; this tool generates the identity resource only."
+      ],
+      "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.managedidentity/userassignedidentities",
+      "schemaOrApiVersion": "2023-07-31-preview",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "azure-app-service",
+      "provider": "azure",
+      "resourceType": "Microsoft.Web/sites",
+      "category": "AppHosting",
+      "supportedProperties": [
+        "kind",
+        "siteConfig.linuxFxVersion",
+        "siteConfig.netFrameworkVersion",
+        "siteConfig.appSettings",
+        "identity"
+      ],
+      "defaults": { "kind": "app", "sku": "F1" },
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "medium",
+        "network": "medium",
+        "cost": "medium"
+      },
+      "costSensitivity": "medium",
+      "evidence": [
+        {
+          "classification": "C",
+          "sourceTitle": "Microsoft.Web/sites — ARM template reference (App Service)",
+          "sourcePath": "azure/templates/microsoft.web/sites",
+          "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.web/sites",
+          "rationale": "Azure App Service provides managed web application hosting.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2023-12-01"
+        }
+      ],
+      "limitations": [
+        "App Service Plan pricing tier affects cost and features; verify SKU availability in the target region."
+      ],
+      "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.web/sites",
+      "schemaOrApiVersion": "2023-12-01",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "azure-function",
+      "provider": "azure",
+      "resourceType": "Microsoft.Web/sites (functionApp)",
+      "category": "Serverless",
+      "supportedProperties": [
+        "kind",
+        "siteConfig.linuxFxVersion",
+        "siteConfig.appSettings",
+        "identity"
+      ],
+      "defaults": { "kind": "functionApp", "sku": "Y1" },
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "medium",
+        "network": "medium",
+        "cost": "low"
+      },
+      "costSensitivity": "low",
+      "evidence": [
+        {
+          "classification": "C",
+          "sourceTitle": "Microsoft.Web/sites (functionApp) — ARM template reference",
+          "sourcePath": "azure/templates/microsoft.web/sites",
+          "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.web/sites",
+          "rationale": "Azure Functions provides serverless compute with HTTP triggers.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2023-12-01"
+        }
+      ],
+      "limitations": [
+        "Consumption plan has cold start latency; verify runtime support in the target region."
+      ],
+      "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.web/sites",
+      "schemaOrApiVersion": "2023-12-01",
+      "reviewDate": "2026-08-29"
+    },
+    {
+      "id": "azure-container-instance",
+      "provider": "azure",
+      "resourceType": "Microsoft.ContainerInstance/containerGroups",
+      "category": "Containers",
+      "supportedProperties": [
+        "osType",
+        "containers.name",
+        "containers.image",
+        "containers.resources",
+        "ipAddress",
+        "imageRegistryCredentials"
+      ],
+      "defaults": { "osType": "Linux" },
+      "dependencies": [],
+      "riskProfile": {
+        "publicExposure": "optional",
+        "identity": "low",
+        "network": "medium",
+        "cost": "low"
+      },
+      "costSensitivity": "low",
+      "evidence": [
+        {
+          "classification": "C",
+          "sourceTitle": "Microsoft.ContainerInstance/containerGroups — ARM template reference",
+          "sourcePath": "azure/templates/microsoft.containerinstance/containergroups",
+          "sourceUrl": "https://learn.microsoft.com/azure/templates/microsoft.containerinstance/containergroups",
+          "rationale": "Azure Container Instances provides fast, simple container execution.",
+          "provenance": "parameterised",
+          "confidence": "high",
+          "schemaOrApiVersion": "2023-05-01"
+        }
+      ],
+      "limitations": [
+        "Container Groups have limited orchestration; for production use Azure Kubernetes Service."
+      ],
+      "documentationUrl": "https://learn.microsoft.com/azure/templates/microsoft.containerinstance/containergroups",
+      "schemaOrApiVersion": "2023-05-01",
+      "reviewDate": "2026-08-29"
     }
   ]
 }

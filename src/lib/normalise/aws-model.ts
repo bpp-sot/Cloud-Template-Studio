@@ -21,9 +21,15 @@ import { findComputeSize, findResource, findAwsImage } from '@/lib/data';
 import { evidenceRefFromId, resolveDependencies } from './dependencies';
 import { findingFromCostRule, findingFromSecurityRule } from './findings';
 import type {
+  AwsAppRunnerProps,
   AwsEbsRootProps,
+  AwsEbsVolumeProps,
+  AwsEcsFargateProps,
+  AwsIamRoleProps,
   AwsInstanceProps,
+  AwsLambdaProps,
   AwsResourceProps,
+  AwsS3BucketProps,
   AwsSecurityGroupIngressRule,
 } from '@/lib/generators/aws/types';
 
@@ -410,6 +416,427 @@ function buildCompute(
   return { resources, findings, outputs };
 }
 
+// ── Phase 5: Advanced resource builders ──
+
+function buildStorage(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const storage of spec.storage) {
+    if (storage.kind === 'aws-ebs-volume') {
+      const catalogue = findResource('aws', 'aws-ebs-volume');
+      const props: AwsEbsVolumeProps = {
+        kind: 'ebsVolume',
+        logicalName: storage.id,
+        sizeGb: storage.sizeGb ?? 64,
+        volumeType: 'gp3',
+        encrypted: true,
+        attachedToInstanceLogicalId: null,
+      };
+      resources.push({
+        logicalId: storage.id,
+        providerResourceType: 'AWS::EC2::Volume',
+        purpose: `Standalone EBS volume (${storage.sizeGb ?? 64} GB, encrypted).`,
+        origin: 'user',
+        autoIncluded: false,
+        dependsOn: [],
+        evidence: catalogue?.evidence ?? [evidenceRefFromId('aws-ebs-volume-doc')],
+        apiVersionOrSpec: catalogue?.schemaOrApiVersion ?? '2010-09-09',
+        securityNotes: ['EBS volume is encrypted by default.'],
+        costNotes: [
+          `Incurs per-GB storage cost for ${storage.sizeGb ?? 64} GB for the lab duration.`,
+        ],
+        warnings: [],
+        properties: { aws: props satisfies AwsResourceProps },
+      });
+    }
+
+    if (storage.kind === 'aws-s3-bucket') {
+      const catalogue = findResource('aws', 'aws-s3-bucket');
+      const props: AwsS3BucketProps = {
+        kind: 's3Bucket',
+        logicalName: storage.id,
+        publicAccessBlocked: storage.publicAccessBlocked,
+        bucketEncryption: true,
+      };
+      resources.push({
+        logicalId: storage.id,
+        providerResourceType: 'AWS::S3::Bucket',
+        purpose: `S3 bucket${storage.publicAccessBlocked ? ' (public access blocked, encrypted)' : ' (public access enabled — review required)'}.`,
+        origin: 'user',
+        autoIncluded: false,
+        dependsOn: [],
+        evidence: catalogue?.evidence ?? [evidenceRefFromId('aws-s3-bucket-doc')],
+        apiVersionOrSpec: catalogue?.schemaOrApiVersion ?? '2010-09-09',
+        securityNotes: [
+          storage.publicAccessBlocked
+            ? 'Public access is blocked via BlockPublicAcls, BlockPublicPolicy, IgnorePublicAcls, RestrictPublicBuckets.'
+            : 'Public access is enabled. This is a security risk; confirm it is intentional.',
+        ],
+        costNotes: ['S3 charges per GB stored and per request. Lifecycle rules can reduce cost.'],
+        warnings: storage.publicAccessBlocked ? [] : ['Public access is enabled on this bucket.'],
+        properties: { aws: props satisfies AwsResourceProps },
+      });
+
+      if (!storage.publicAccessBlocked) {
+        const sec = findingFromSecurityRule('sec-public-storage', storage.id);
+        if (sec) findings.push(sec);
+      }
+    }
+  }
+
+  return { resources, findings };
+}
+
+function buildIdentity(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const identity of spec.identity) {
+    if (identity.kind !== 'aws-iam-role') continue;
+    const catalogue = findResource('aws', 'aws-iam-role');
+    const roleName = identity.name.replace(/[^a-zA-Z0-9_-]/g, '-');
+    const props: AwsIamRoleProps = {
+      kind: 'iamRole',
+      logicalName: identity.id,
+      assumeRolePolicyDocument: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { Service: 'ec2.amazonaws.com' },
+            Action: 'sts:AssumeRole',
+          },
+        ],
+      },
+      purpose: identity.purpose,
+    };
+    resources.push({
+      logicalId: identity.id,
+      providerResourceType: 'AWS::IAM::Role',
+      purpose: `IAM role: ${identity.purpose}`,
+      origin: 'user',
+      autoIncluded: false,
+      dependsOn: [],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('aws-iam-role-doc')],
+      apiVersionOrSpec: catalogue?.schemaOrApiVersion ?? '2010-09-09',
+      securityNotes: [
+        'Generated with a minimal trust policy. Permissions must be scoped to least privilege.',
+      ],
+      costNotes: ['No direct charge for the IAM role.'],
+      warnings: [
+        'Generated role has a basic EC2 trust policy; review and scope permissions separately.',
+      ],
+      properties: { aws: props satisfies AwsResourceProps, roleName },
+    });
+    findings.push({
+      id: `identity-least-privilege:${identity.id}`,
+      kind: 'security',
+      severity: 'info',
+      category: 'Identity',
+      description: `IAM role "${roleName}" was created with a basic trust policy. Managed policies are not attached.`,
+      recommendation:
+        'Attach the minimum required managed or inline policies. Avoid AdministratorAccess.',
+      affectedResource: identity.id,
+      evidence: evidenceRefFromId('safety-least-privilege-identity'),
+    });
+  }
+
+  return { resources, findings };
+}
+
+function buildAppHosting(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const app of spec.appHosting) {
+    if (app.kind !== 'aws-app-runner') continue;
+    const catalogue = findResource('aws', 'aws-app-runner');
+    const props: AwsAppRunnerProps = {
+      kind: 'appRunner',
+      logicalName: app.id,
+      runtime: app.runtime,
+      imageRef: app.imageRef,
+      publicEndpointRequested: app.publicEndpointRequested,
+      environmentVariables: app.environmentVariables,
+    };
+    resources.push({
+      logicalId: app.id,
+      providerResourceType: 'AWS::AppRunner::Service',
+      purpose: `AWS App Runner service hosting a ${app.runtime} application from image ${app.imageRef}.`,
+      origin: 'user',
+      autoIncluded: false,
+      dependsOn: [],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('aws-app-runner-doc')],
+      apiVersionOrSpec: catalogue?.schemaOrApiVersion ?? '2010-09-09',
+      securityNotes: [
+        app.publicEndpointRequested
+          ? 'Public endpoint is enabled. Restrict access as needed.'
+          : 'No public endpoint; private access only.',
+      ],
+      costNotes: ['App Runner charges per second of compute and per GB of memory used.'],
+      warnings: [],
+      properties: { aws: props satisfies AwsResourceProps },
+    });
+
+    if (app.publicEndpointRequested) {
+      const sec = findingFromSecurityRule('sec-public-ip', app.id);
+      if (sec) findings.push(sec);
+    }
+  }
+
+  return { resources, findings };
+}
+
+function buildServerless(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const fn of spec.serverless) {
+    if (fn.kind !== 'aws-lambda') continue;
+    const catalogue = findResource('aws', 'aws-lambda');
+
+    // Auto-included execution role.
+    const executionRoleLogicalId = `${fn.id}ExecutionRole`;
+    const roleProps: AwsIamRoleProps = {
+      kind: 'iamRole',
+      logicalName: executionRoleLogicalId,
+      assumeRolePolicyDocument: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { Service: 'lambda.amazonaws.com' },
+            Action: 'sts:AssumeRole',
+          },
+        ],
+      },
+      purpose: `Lambda execution role for ${fn.name}`,
+    };
+    resources.push({
+      logicalId: executionRoleLogicalId,
+      providerResourceType: 'AWS::IAM::Role',
+      purpose: `Auto-included IAM execution role for Lambda function ${fn.name}.`,
+      origin: 'provider-required',
+      autoIncluded: true,
+      dependsOn: [],
+      evidence: [evidenceRefFromId('aws-iam-role-doc')],
+      apiVersionOrSpec: '2010-09-09',
+      securityNotes: [
+        'Minimal trust policy for Lambda. Add only the permissions the function needs.',
+      ],
+      costNotes: ['No direct charge for the IAM role.'],
+      warnings: [],
+      properties: { aws: roleProps satisfies AwsResourceProps },
+    });
+    findings.push({
+      id: `auto-included:${executionRoleLogicalId}`,
+      kind: 'dependency',
+      severity: 'info',
+      category: 'Auto-included dependency',
+      description: `"AWS::IAM::Role" was automatically included because a Lambda function requires an execution role.`,
+      recommendation: 'Review the auto-included role. Add only the permissions the function needs.',
+      affectedResource: executionRoleLogicalId,
+      evidence: evidenceRefFromId('aws-iam-role-doc'),
+    });
+
+    const fnProps: AwsLambdaProps = {
+      kind: 'lambda',
+      logicalName: fn.id,
+      runtime: fn.runtime,
+      handler: fn.handler,
+      codeArtifact: fn.codeArtifact,
+      memoryMb: fn.memoryMb,
+      timeoutSeconds: fn.timeoutSeconds,
+      httpTriggerRequested: fn.httpTriggerRequested,
+      executionRoleLogicalId,
+      environmentVariables: fn.environmentVariables,
+    };
+    resources.push({
+      logicalId: fn.id,
+      providerResourceType: 'AWS::Lambda::Function',
+      purpose: `AWS Lambda function (${fn.runtime}, ${fn.memoryMb} MB, ${fn.timeoutSeconds}s timeout).`,
+      origin: 'user',
+      autoIncluded: false,
+      dependsOn: [executionRoleLogicalId],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('aws-lambda-doc')],
+      apiVersionOrSpec: catalogue?.schemaOrApiVersion ?? '2010-09-09',
+      securityNotes: [
+        fn.httpTriggerRequested
+          ? 'HTTP trigger is enabled via Function URL. Secure the endpoint with auth.'
+          : 'No HTTP trigger; function is invoked by other triggers only.',
+      ],
+      costNotes: ['Lambda charges per request and per GB-second of compute.'],
+      warnings: [],
+      properties: { aws: fnProps satisfies AwsResourceProps },
+    });
+
+    if (fn.httpTriggerRequested) {
+      const sec = findingFromSecurityRule('sec-public-ip', fn.id);
+      if (sec) findings.push(sec);
+    }
+  }
+
+  return { resources, findings };
+}
+
+function buildContainers(spec: LabSpecification): {
+  resources: GeneratedResource[];
+  findings: ReviewFinding[];
+} {
+  const resources: GeneratedResource[] = [];
+  const findings: ReviewFinding[] = [];
+
+  for (const ctr of spec.containers) {
+    if (ctr.kind !== 'aws-ecs-fargate') continue;
+    const catalogue = findResource('aws', 'aws-ecs-fargate');
+
+    // Auto-included task execution role.
+    const executionRoleLogicalId = `${ctr.id}ExecutionRole`;
+    const roleProps: AwsIamRoleProps = {
+      kind: 'iamRole',
+      logicalName: executionRoleLogicalId,
+      assumeRolePolicyDocument: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { Service: 'ecs-tasks.amazonaws.com' },
+            Action: 'sts:AssumeRole',
+          },
+        ],
+      },
+      purpose: `ECS task execution role for ${ctr.name}`,
+    };
+    resources.push({
+      logicalId: executionRoleLogicalId,
+      providerResourceType: 'AWS::IAM::Role',
+      purpose: `Auto-included IAM task execution role for ECS Fargate task ${ctr.name}.`,
+      origin: 'provider-required',
+      autoIncluded: true,
+      dependsOn: [],
+      evidence: [evidenceRefFromId('aws-iam-role-doc')],
+      apiVersionOrSpec: '2010-09-09',
+      securityNotes: [
+        'Minimal trust policy for ECS tasks. Add only the permissions the task needs.',
+      ],
+      costNotes: ['No direct charge for the IAM role.'],
+      warnings: [],
+      properties: { aws: roleProps satisfies AwsResourceProps },
+    });
+    findings.push({
+      id: `auto-included:${executionRoleLogicalId}`,
+      kind: 'dependency',
+      severity: 'info',
+      category: 'Auto-included dependency',
+      description: `"AWS::IAM::Role" was automatically included because a Fargate task requires an execution role.`,
+      recommendation: 'Review the auto-included role. Add only the permissions the task needs.',
+      affectedResource: executionRoleLogicalId,
+      evidence: evidenceRefFromId('aws-iam-role-doc'),
+    });
+
+    const clusterId = `${ctr.id}Cluster`;
+    const taskDefId = `${ctr.id}TaskDef`;
+    const serviceId = ctr.id;
+
+    // Cluster
+    resources.push({
+      logicalId: clusterId,
+      providerResourceType: 'AWS::ECS::Cluster',
+      purpose: `ECS cluster for container ${ctr.name}.`,
+      origin: 'provider-required',
+      autoIncluded: true,
+      dependsOn: [],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('aws-ecs-fargate-doc')],
+      apiVersionOrSpec: catalogue?.schemaOrApiVersion ?? '2010-09-09',
+      securityNotes: [
+        'Cluster is a logical grouping; security is governed by the task and service configuration.',
+      ],
+      costNotes: ['No direct charge for the cluster. Fargate charges per vCPU and GB of memory.'],
+      warnings: [],
+      properties: {
+        aws: {
+          kind: 'ecsFargate',
+          logicalName: clusterId,
+          image: '',
+          cpu: 0,
+          memoryMb: 0,
+          port: 0,
+          publicEndpointRequested: false,
+          executionRoleLogicalId: null,
+          environmentVariables: [],
+        } satisfies AwsResourceProps,
+      },
+    });
+
+    // Task definition
+    const taskProps: AwsEcsFargateProps = {
+      kind: 'ecsFargate',
+      logicalName: taskDefId,
+      image: ctr.image,
+      cpu: ctr.cpu,
+      memoryMb: Math.round(ctr.memoryGb * 1024),
+      port: ctr.port,
+      publicEndpointRequested: ctr.publicEndpointRequested,
+      executionRoleLogicalId,
+      environmentVariables: ctr.environmentVariables,
+    };
+    resources.push({
+      logicalId: taskDefId,
+      providerResourceType: 'AWS::ECS::TaskDefinition',
+      purpose: `Fargate task definition for ${ctr.image} (${ctr.cpu} CPU, ${ctr.memoryGb} GB RAM).`,
+      origin: 'user',
+      autoIncluded: false,
+      dependsOn: [executionRoleLogicalId],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('aws-ecs-fargate-doc')],
+      apiVersionOrSpec: catalogue?.schemaOrApiVersion ?? '2010-09-09',
+      securityNotes: ['Task execution role is scoped to pull images and publish logs.'],
+      costNotes: ['Fargate charges per vCPU-second and GB-memory-second.'],
+      warnings: [],
+      properties: { aws: taskProps satisfies AwsResourceProps },
+    });
+
+    // Service
+    resources.push({
+      logicalId: serviceId,
+      providerResourceType: 'AWS::ECS::Service',
+      purpose: `ECS Fargate service running ${ctr.image} on port ${ctr.port}.`,
+      origin: 'user',
+      autoIncluded: false,
+      dependsOn: [clusterId, taskDefId],
+      evidence: catalogue?.evidence ?? [evidenceRefFromId('aws-ecs-fargate-doc')],
+      apiVersionOrSpec: catalogue?.schemaOrApiVersion ?? '2010-09-09',
+      securityNotes: [
+        ctr.publicEndpointRequested
+          ? 'Public port is exposed via the load balancer. Restrict access as needed.'
+          : 'No public endpoint; private access only.',
+      ],
+      costNotes: ['Fargate charges per vCPU and GB of memory while the service is running.'],
+      warnings: [],
+      properties: { aws: { ...taskProps, logicalName: serviceId } satisfies AwsResourceProps },
+    });
+
+    if (ctr.publicEndpointRequested) {
+      const sec = findingFromSecurityRule('sec-public-ip', ctr.id);
+      if (sec) findings.push(sec);
+    }
+  }
+
+  return { resources, findings };
+}
+
 export function buildAwsModel(spec: LabSpecification): InternalModel {
   const resources: GeneratedResource[] = [];
   const findings: ReviewFinding[] = [];
@@ -421,6 +848,27 @@ export function buildAwsModel(spec: LabSpecification): InternalModel {
     findings.push(...built.findings);
     outputs.push(...built.outputs);
   });
+
+  // Phase 5: Advanced resources.
+  const storage = buildStorage(spec);
+  resources.push(...storage.resources);
+  findings.push(...storage.findings);
+
+  const identity = buildIdentity(spec);
+  resources.push(...identity.resources);
+  findings.push(...identity.findings);
+
+  const appHosting = buildAppHosting(spec);
+  resources.push(...appHosting.resources);
+  findings.push(...appHosting.findings);
+
+  const serverless = buildServerless(spec);
+  resources.push(...serverless.resources);
+  findings.push(...serverless.findings);
+
+  const containers = buildContainers(spec);
+  resources.push(...containers.resources);
+  findings.push(...containers.findings);
 
   // Network-level findings (open CIDR / management ports).
   for (const net of spec.network) {

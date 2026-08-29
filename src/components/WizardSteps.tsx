@@ -13,11 +13,16 @@ import { detectSecrets } from '@/lib/secret-detector';
 import { getRegions, getComputeSizes, getAzureImages, getAwsImages } from '@/lib/data';
 import { generateId } from '@/lib/model/factory';
 import type {
+  AppHostingRequirement,
   ArchitecturePatternId,
   ComputeRequirement,
+  ContainerRequirement,
+  IdentityRequirement,
   InboundRule,
   LabSpecification,
   OperatingSystemFamily,
+  ServerlessRequirement,
+  StorageRequirement,
   VmAuthMethod,
 } from '@/types';
 
@@ -1523,6 +1528,748 @@ export function Step10Review() {
   );
 }
 
+// ─── Step 9: Storage (Phase 5) ────────────────────────────────────────────
+
+export function Step9Storage() {
+  const { wizard, patchSpec } = useWizard();
+  const items = wizard.spec.storage;
+  const provider = wizard.spec.provider;
+
+  const storageKinds =
+    provider === 'azure'
+      ? (['azure-managed-disk', 'azure-storage-account'] as const)
+      : (['aws-ebs-volume', 'aws-s3-bucket'] as const);
+
+  const addStorage = () => {
+    const item: StorageRequirement = {
+      id: `storage-${generateId()}`,
+      name: `storage-${items.length + 1}`,
+      kind: storageKinds[0],
+      sizeGb: 64,
+      publicAccessBlocked: true,
+      traceTo: [],
+    };
+    patchSpec((spec) => ({ ...spec, storage: [...spec.storage, item] }));
+  };
+
+  const updateStorage = (id: string, patch: Partial<StorageRequirement>) => {
+    patchSpec((spec) => ({
+      ...spec,
+      storage: spec.storage.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+    }));
+  };
+
+  const removeStorage = (id: string) => {
+    patchSpec((spec) => ({ ...spec, storage: spec.storage.filter((s) => s.id !== id) }));
+  };
+
+  return (
+    <div className="card">
+      <div className="card-header">Storage &amp; Data</div>
+      <p className="text-sm text-muted mb-4">
+        Add standalone storage resources. Public access is blocked by default and must be explicitly
+        opted in. Storage accounts and S3 buckets are generated with encryption enabled.
+      </p>
+
+      {items.length === 0 && (
+        <div className="empty-state">
+          <p className="text-muted">No storage resources added.</p>
+        </div>
+      )}
+
+      {items.map((s) => (
+        <div key={s.id} className="project-item">
+          <div className="flex-1">
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Name</label>
+                <input
+                  className="form-input"
+                  value={s.name}
+                  onChange={(e) => updateStorage(s.id, { name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Type</label>
+                <select
+                  className="form-input"
+                  value={s.kind}
+                  onChange={(e) =>
+                    updateStorage(s.id, { kind: e.target.value as StorageRequirement['kind'] })
+                  }
+                >
+                  {storageKinds.map((k) => (
+                    <option key={k} value={k}>
+                      {k}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Size (GB)</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={s.sizeGb ?? 64}
+                  onChange={(e) => updateStorage(s.id, { sizeGb: Number(e.target.value) })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Public Access</label>
+                <select
+                  className="form-input"
+                  value={s.publicAccessBlocked ? 'blocked' : 'allowed'}
+                  onChange={(e) =>
+                    updateStorage(s.id, { publicAccessBlocked: e.target.value === 'blocked' })
+                  }
+                >
+                  <option value="blocked">Blocked (recommended)</option>
+                  <option value="allowed">Allowed (requires review)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => removeStorage(s.id)}>
+            Remove
+          </button>
+        </div>
+      ))}
+
+      <button className="btn btn-primary mt-4" onClick={addStorage}>
+        {'\u{2795}'} Add Storage
+      </button>
+    </div>
+  );
+}
+
+// ─── Step 10: Identity (Phase 5) ──────────────────────────────────────────
+
+export function Step10Identity() {
+  const { wizard, patchSpec } = useWizard();
+  const items = wizard.spec.identity;
+  const provider = wizard.spec.provider;
+
+  const identityKind = provider === 'azure' ? 'azure-managed-identity' : 'aws-iam-role';
+
+  const addIdentity = () => {
+    const item: IdentityRequirement = {
+      id: `identity-${generateId()}`,
+      name: `identity-${items.length + 1}`,
+      kind: identityKind as IdentityRequirement['kind'],
+      purpose: '',
+      traceTo: [],
+    };
+    patchSpec((spec) => ({ ...spec, identity: [...spec.identity, item] }));
+  };
+
+  const updateIdentity = (id: string, patch: Partial<IdentityRequirement>) => {
+    patchSpec((spec) => ({
+      ...spec,
+      identity: spec.identity.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+    }));
+  };
+
+  const removeIdentity = (id: string) => {
+    patchSpec((spec) => ({ ...spec, identity: spec.identity.filter((i) => i.id !== id) }));
+  };
+
+  return (
+    <div className="card">
+      <div className="card-header">Identity &amp; Access</div>
+      <p className="text-sm text-muted mb-4">
+        Add managed identities (Azure) or IAM roles (AWS). Generated identities follow
+        least-privilege principles. Role assignments and permissions must be configured separately.
+      </p>
+
+      {items.length === 0 && (
+        <div className="empty-state">
+          <p className="text-muted">No identity resources added.</p>
+        </div>
+      )}
+
+      {items.map((i) => (
+        <div key={i.id} className="project-item">
+          <div className="flex-1">
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Name</label>
+                <input
+                  className="form-input"
+                  value={i.name}
+                  onChange={(e) => updateIdentity(i.id, { name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Type</label>
+                <input className="form-input" value={i.kind} disabled />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Purpose</label>
+              <input
+                className="form-input"
+                value={i.purpose}
+                onChange={(e) => updateIdentity(i.id, { purpose: e.target.value })}
+                placeholder="Describe what this identity is for"
+              />
+            </div>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => removeIdentity(i.id)}>
+            Remove
+          </button>
+        </div>
+      ))}
+
+      <button className="btn btn-primary mt-4" onClick={addIdentity}>
+        {'\u{2795}'} Add Identity
+      </button>
+    </div>
+  );
+}
+
+// ─── Step 11: App Hosting (Phase 5) ───────────────────────────────────────
+
+export function Step11AppHosting() {
+  const { wizard, patchSpec } = useWizard();
+  const items = wizard.spec.appHosting;
+  const provider = wizard.spec.provider;
+  const appKind = provider === 'azure' ? 'azure-app-service' : 'aws-app-runner';
+
+  const addApp = () => {
+    const item: AppHostingRequirement = {
+      id: `app-${generateId()}`,
+      name: `app-${items.length + 1}`,
+      kind: appKind as AppHostingRequirement['kind'],
+      runtime: 'nodejs',
+      imageRef: '',
+      publicEndpointRequested: false,
+      environmentVariables: [],
+      traceTo: [],
+    };
+    patchSpec((spec) => ({ ...spec, appHosting: [...spec.appHosting, item] }));
+  };
+
+  const updateApp = (id: string, patch: Partial<AppHostingRequirement>) => {
+    patchSpec((spec) => ({
+      ...spec,
+      appHosting: spec.appHosting.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+    }));
+  };
+
+  const removeApp = (id: string) => {
+    patchSpec((spec) => ({ ...spec, appHosting: spec.appHosting.filter((a) => a.id !== id) }));
+  };
+
+  return (
+    <div className="card">
+      <div className="card-header">App Hosting</div>
+      <p className="text-sm text-muted mb-4">
+        Add managed web application hosting: Azure App Service or AWS App Runner. Public endpoints
+        are opt-in only.
+      </p>
+
+      {items.length === 0 && (
+        <div className="empty-state">
+          <p className="text-muted">No app hosting resources added.</p>
+        </div>
+      )}
+
+      {items.map((a) => (
+        <div key={a.id} className="project-item">
+          <div className="flex-1">
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Name</label>
+                <input
+                  className="form-input"
+                  value={a.name}
+                  onChange={(e) => updateApp(a.id, { name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Runtime</label>
+                <select
+                  className="form-input"
+                  value={a.runtime}
+                  onChange={(e) => updateApp(a.id, { runtime: e.target.value })}
+                >
+                  <option value="nodejs">Node.js</option>
+                  <option value="python">Python</option>
+                  <option value="dotnet">.NET</option>
+                  <option value="java">Java</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Image / Artifact Reference</label>
+              <input
+                className="form-input"
+                value={a.imageRef}
+                onChange={(e) => {
+                  const detection = detectSecrets(e.target.value);
+                  if (detection.detected) {
+                    alert(detection.warnings.join('\n'));
+                    return;
+                  }
+                  updateApp(a.id, { imageRef: e.target.value });
+                }}
+                placeholder="e.g. public.ecr.aws/nginx/nginx:latest"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Public Endpoint</label>
+              <select
+                className="form-input"
+                value={a.publicEndpointRequested ? 'yes' : 'no'}
+                onChange={(e) =>
+                  updateApp(a.id, { publicEndpointRequested: e.target.value === 'yes' })
+                }
+              >
+                <option value="no">No (private only)</option>
+                <option value="yes">Yes (opt-in, requires review)</option>
+              </select>
+            </div>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => removeApp(a.id)}>
+            Remove
+          </button>
+        </div>
+      ))}
+
+      <button className="btn btn-primary mt-4" onClick={addApp}>
+        {'\u{2795}'} Add App Hosting
+      </button>
+    </div>
+  );
+}
+
+// ─── Step 12: Serverless (Phase 5) ────────────────────────────────────────
+
+export function Step12Serverless() {
+  const { wizard, patchSpec } = useWizard();
+  const items = wizard.spec.serverless;
+  const provider = wizard.spec.provider;
+  const fnKind = provider === 'azure' ? 'azure-function' : 'aws-lambda';
+
+  const addFn = () => {
+    const item: ServerlessRequirement = {
+      id: `fn-${generateId()}`,
+      name: `function-${items.length + 1}`,
+      kind: fnKind as ServerlessRequirement['kind'],
+      runtime: 'nodejs18.x',
+      handler: 'index.handler',
+      codeArtifact: '',
+      memoryMb: 128,
+      timeoutSeconds: 30,
+      httpTriggerRequested: false,
+      environmentVariables: [],
+      traceTo: [],
+    };
+    patchSpec((spec) => ({ ...spec, serverless: [...spec.serverless, item] }));
+  };
+
+  const updateFn = (id: string, patch: Partial<ServerlessRequirement>) => {
+    patchSpec((spec) => ({
+      ...spec,
+      serverless: spec.serverless.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    }));
+  };
+
+  const removeFn = (id: string) => {
+    patchSpec((spec) => ({ ...spec, serverless: spec.serverless.filter((f) => f.id !== id) }));
+  };
+
+  return (
+    <div className="card">
+      <div className="card-header">Serverless</div>
+      <p className="text-sm text-muted mb-4">
+        Add serverless functions: Azure Functions or AWS Lambda. HTTP triggers are opt-in only. AWS
+        Lambda auto-includes a minimal execution role.
+      </p>
+
+      {items.length === 0 && (
+        <div className="empty-state">
+          <p className="text-muted">No serverless functions added.</p>
+        </div>
+      )}
+
+      {items.map((f) => (
+        <div key={f.id} className="project-item">
+          <div className="flex-1">
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Name</label>
+                <input
+                  className="form-input"
+                  value={f.name}
+                  onChange={(e) => updateFn(f.id, { name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Runtime</label>
+                <input
+                  className="form-input"
+                  value={f.runtime}
+                  onChange={(e) => updateFn(f.id, { runtime: e.target.value })}
+                  placeholder="e.g. nodejs18.x, python3.11"
+                />
+              </div>
+            </div>
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Handler</label>
+                <input
+                  className="form-input"
+                  value={f.handler}
+                  onChange={(e) => updateFn(f.id, { handler: e.target.value })}
+                  placeholder="e.g. index.handler"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Code Artifact</label>
+                <input
+                  className="form-input"
+                  value={f.codeArtifact}
+                  onChange={(e) => {
+                    const detection = detectSecrets(e.target.value);
+                    if (detection.detected) {
+                      alert(detection.warnings.join('\n'));
+                      return;
+                    }
+                    updateFn(f.id, { codeArtifact: e.target.value });
+                  }}
+                  placeholder="Inline code or zip reference"
+                />
+              </div>
+            </div>
+            <div className="form-grid-3">
+              <div className="form-group">
+                <label className="form-label">Memory (MB)</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={f.memoryMb}
+                  onChange={(e) => updateFn(f.id, { memoryMb: Number(e.target.value) })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Timeout (s)</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={f.timeoutSeconds}
+                  onChange={(e) => updateFn(f.id, { timeoutSeconds: Number(e.target.value) })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">HTTP Trigger</label>
+                <select
+                  className="form-input"
+                  value={f.httpTriggerRequested ? 'yes' : 'no'}
+                  onChange={(e) =>
+                    updateFn(f.id, { httpTriggerRequested: e.target.value === 'yes' })
+                  }
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes (opt-in)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => removeFn(f.id)}>
+            Remove
+          </button>
+        </div>
+      ))}
+
+      <button className="btn btn-primary mt-4" onClick={addFn}>
+        {'\u{2795}'} Add Function
+      </button>
+    </div>
+  );
+}
+
+// ─── Step 13: Containers (Phase 5) ────────────────────────────────────────
+
+export function Step13Containers() {
+  const { wizard, patchSpec } = useWizard();
+  const items = wizard.spec.containers;
+  const provider = wizard.spec.provider;
+  const ctrKind = provider === 'azure' ? 'azure-container-instance' : 'aws-ecs-fargate';
+
+  const addCtr = () => {
+    const item: ContainerRequirement = {
+      id: `ctr-${generateId()}`,
+      name: `container-${items.length + 1}`,
+      kind: ctrKind as ContainerRequirement['kind'],
+      image: 'nginx:latest',
+      cpu: 1,
+      memoryGb: 1.5,
+      port: 80,
+      publicEndpointRequested: false,
+      environmentVariables: [],
+      traceTo: [],
+    };
+    patchSpec((spec) => ({ ...spec, containers: [...spec.containers, item] }));
+  };
+
+  const updateCtr = (id: string, patch: Partial<ContainerRequirement>) => {
+    patchSpec((spec) => ({
+      ...spec,
+      containers: spec.containers.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
+  };
+
+  const removeCtr = (id: string) => {
+    patchSpec((spec) => ({ ...spec, containers: spec.containers.filter((c) => c.id !== id) }));
+  };
+
+  return (
+    <div className="card">
+      <div className="card-header">Containers</div>
+      <p className="text-sm text-muted mb-4">
+        Add container workloads: Azure Container Instances or AWS ECS Fargate. Public endpoints are
+        opt-in only. AWS ECS Fargate auto-includes a task execution role.
+      </p>
+
+      {items.length === 0 && (
+        <div className="empty-state">
+          <p className="text-muted">No container resources added.</p>
+        </div>
+      )}
+
+      {items.map((c) => (
+        <div key={c.id} className="project-item">
+          <div className="flex-1">
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Name</label>
+                <input
+                  className="form-input"
+                  value={c.name}
+                  onChange={(e) => updateCtr(c.id, { name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Image</label>
+                <input
+                  className="form-input"
+                  value={c.image}
+                  onChange={(e) => {
+                    const detection = detectSecrets(e.target.value);
+                    if (detection.detected) {
+                      alert(detection.warnings.join('\n'));
+                      return;
+                    }
+                    updateCtr(c.id, { image: e.target.value });
+                  }}
+                  placeholder="e.g. nginx:latest"
+                />
+              </div>
+            </div>
+            <div className="form-grid-3">
+              <div className="form-group">
+                <label className="form-label">CPU</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  step="0.5"
+                  value={c.cpu}
+                  onChange={(e) => updateCtr(c.id, { cpu: Number(e.target.value) })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Memory (GB)</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  step="0.5"
+                  value={c.memoryGb}
+                  onChange={(e) => updateCtr(c.id, { memoryGb: Number(e.target.value) })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Port</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={c.port}
+                  onChange={(e) => updateCtr(c.id, { port: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Public Endpoint</label>
+              <select
+                className="form-input"
+                value={c.publicEndpointRequested ? 'yes' : 'no'}
+                onChange={(e) =>
+                  updateCtr(c.id, { publicEndpointRequested: e.target.value === 'yes' })
+                }
+              >
+                <option value="no">No (private only)</option>
+                <option value="yes">Yes (opt-in, requires review)</option>
+              </select>
+            </div>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => removeCtr(c.id)}>
+            Remove
+          </button>
+        </div>
+      ))}
+
+      <button className="btn btn-primary mt-4" onClick={addCtr}>
+        {'\u{2795}'} Add Container
+      </button>
+    </div>
+  );
+}
+
+// ─── Step 14: Professional Mode (Phase 6) ─────────────────────────────────
+
+export function Step14Professional() {
+  const { wizard, patchSpec } = useWizard();
+  const prof = wizard.spec.professional ?? { azureFragments: [], awsFragments: [], notes: '' };
+  const provider = wizard.spec.provider;
+  const [newFragment, setNewFragment] = useState('');
+
+  const ensureProf = () => {
+    if (wizard.spec.professional) return wizard.spec.professional;
+    const fresh = { azureFragments: [], awsFragments: [], notes: '' };
+    patchSpec((spec) => ({ ...spec, professional: fresh }));
+    return fresh;
+  };
+
+  const addFragment = () => {
+    if (!newFragment.trim()) return;
+    const detection = detectSecrets(newFragment);
+    if (detection.detected) {
+      alert(`Potential secret detected in fragment:\n${detection.warnings.join('\n')}`);
+      return;
+    }
+    const current = ensureProf();
+    if (provider === 'azure') {
+      patchSpec((spec) => ({
+        ...spec,
+        professional: { ...current, azureFragments: [...current.azureFragments, newFragment] },
+      }));
+    } else {
+      patchSpec((spec) => ({
+        ...spec,
+        professional: { ...current, awsFragments: [...current.awsFragments, newFragment] },
+      }));
+    }
+    setNewFragment('');
+  };
+
+  const removeFragment = (index: number) => {
+    const current = ensureProf();
+    if (provider === 'azure') {
+      patchSpec((spec) => ({
+        ...spec,
+        professional: {
+          ...current,
+          azureFragments: current.azureFragments.filter((_, i) => i !== index),
+        },
+      }));
+    } else {
+      patchSpec((spec) => ({
+        ...spec,
+        professional: {
+          ...current,
+          awsFragments: current.awsFragments.filter((_, i) => i !== index),
+        },
+      }));
+    }
+  };
+
+  const updateNotes = (value: string) => {
+    const detection = detectSecrets(value);
+    if (detection.detected) {
+      alert(detection.warnings.join('\n'));
+      return;
+    }
+    const current = ensureProf();
+    patchSpec((spec) => ({ ...spec, professional: { ...current, notes: value } }));
+  };
+
+  const fragments = provider === 'azure' ? prof.azureFragments : prof.awsFragments;
+
+  return (
+    <div className="card">
+      <div className="card-header">Professional Mode — Custom Fragments</div>
+      <p className="text-sm text-muted mb-4">
+        Add custom provider-native fragments (Bicep, ARM JSON, CloudFormation YAML/JSON). These are
+        Classification F (user-supplied) and are injected into the generated template with clear
+        boundary markers. They are NOT validated against official evidence.
+      </p>
+
+      <div className="alert alert-warning mb-4">
+        <span>{'\u{26A0}'}</span>
+        <div>
+          Custom fragments are <strong>not</strong> evidence-backed. They must be manually reviewed
+          for correctness, security, and duplicate identifiers before deployment.
+        </div>
+      </div>
+
+      {fragments.length > 0 && (
+        <div className="project-list mb-4">
+          {fragments.map((frag, i) => (
+            <div key={i} className="project-item">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="badge badge-warning">Classification F</span>
+                  <span className="text-sm text-muted">Fragment {i + 1}</span>
+                </div>
+                <pre className="code-block" data-language={provider === 'azure' ? 'bicep' : 'yaml'}>
+                  <code>{frag}</code>
+                </pre>
+              </div>
+              <button className="btn btn-secondary btn-sm" onClick={() => removeFragment(i)}>
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="form-group">
+        <label className="form-label">Add Custom Fragment</label>
+        <textarea
+          className="form-input"
+          rows={6}
+          value={newFragment}
+          onChange={(e) => setNewFragment(e.target.value)}
+          placeholder={
+            provider === 'azure'
+              ? '// Paste Bicep or ARM JSON fragment here...'
+              : '# Paste CloudFormation YAML or JSON fragment here...'
+          }
+        />
+        <div className="form-hint">
+          Fragments are secret-scanned before being added. No credentials or keys are allowed.
+        </div>
+      </div>
+      <button className="btn btn-primary mt-2" onClick={addFragment}>
+        {'\u{2795}'} Add Fragment
+      </button>
+
+      <div className="form-group mt-4">
+        <label className="form-label">Notes</label>
+        <textarea
+          className="form-input"
+          rows={3}
+          value={prof.notes}
+          onChange={(e) => updateNotes(e.target.value)}
+          placeholder="Document why these custom fragments are needed..."
+        />
+      </div>
+    </div>
+  );
+}
+
 export const WIZARD_STEPS: Array<{ label: string; component: () => JSX.Element }> = [
   { label: 'Project', component: Step1Project },
   { label: 'Provider', component: Step2Provider },
@@ -1532,6 +2279,12 @@ export const WIZARD_STEPS: Array<{ label: string; component: () => JSX.Element }
   { label: 'Pattern', component: Step6Pattern },
   { label: 'Compute', component: Step7Compute },
   { label: 'Networking', component: Step8Networking },
+  { label: 'Storage', component: Step9Storage },
+  { label: 'Identity', component: Step10Identity },
+  { label: 'App Hosting', component: Step11AppHosting },
+  { label: 'Serverless', component: Step12Serverless },
+  { label: 'Containers', component: Step13Containers },
+  { label: 'Professional', component: Step14Professional },
   { label: 'Init', component: Step9Initialization },
   { label: 'Review', component: Step10Review },
 ];

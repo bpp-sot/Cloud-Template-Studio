@@ -16,13 +16,16 @@ import { generateAwsParametersJson } from '@/lib/generators/aws/parameters';
 export function generateArtifacts(spec: LabSpecification): GeneratedArtifacts {
   const internalModel = buildInternalModel(spec);
   const generatedAt = new Date().toISOString();
+  const prof = spec.professional;
+  const azureFragments = prof?.azureFragments ?? [];
+  const awsFragments = prof?.awsFragments ?? [];
 
   if (spec.provider === 'azure') {
     return {
       provider: 'azure',
       generatedAt,
-      bicep: generateBicep(internalModel),
-      armJson: generateArmTemplate(internalModel),
+      bicep: generateBicep(internalModel, azureFragments),
+      armJson: generateArmTemplate(internalModel, azureFragments),
       parametersJson: generateAzureParametersJson(internalModel),
       internalModel,
     };
@@ -32,8 +35,8 @@ export function generateArtifacts(spec: LabSpecification): GeneratedArtifacts {
     return {
       provider: 'aws',
       generatedAt,
-      cloudFormationYaml: generateCloudFormationYaml(internalModel),
-      cloudFormationJson: generateCloudFormationJson(internalModel),
+      cloudFormationYaml: generateCloudFormationYaml(internalModel, awsFragments),
+      cloudFormationJson: generateCloudFormationJson(internalModel, awsFragments),
       parametersJson: generateAwsParametersJson(internalModel.parameters),
       internalModel,
     };

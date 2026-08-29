@@ -194,12 +194,78 @@ function generateSummary(
   ].join('\n');
 }
 
+/** Analyse Phase 5 advanced resources for cost risk. */
+function analyseAdvancedCosts(spec: LabSpecification): CostReviewItem[] {
+  const items: CostReviewItem[] = [];
+  const provider = spec.provider;
+
+  // Standalone storage
+  for (const storage of spec.storage) {
+    const sizeGb = storage.sizeGb ?? 64;
+    items.push({
+      id: `cost-storage-adv:${storage.id}`,
+      category: 'Standalone storage',
+      description: `Storage "${storage.name}" (${storage.kind}, ${sizeGb} GB) incurs per-GB storage cost for the lab duration.`,
+      recommendation:
+        'Use standard or balanced storage tiers for labs. Remove storage when not needed.',
+      affectedResource: storage.name,
+      riskLevel: sizeGb > 256 ? 'medium' : 'low',
+      pricingCalculatorUrl: pricingUrl(provider),
+    });
+  }
+
+  // App hosting
+  for (const app of spec.appHosting) {
+    items.push({
+      id: `cost-app-hosting:${app.id}`,
+      category: 'App hosting',
+      description: `App hosting "${app.name}" (${app.kind}) incurs compute charges while running.`,
+      recommendation:
+        'Use free/shared tiers for development. Stop or remove the service when not in use.',
+      affectedResource: app.name,
+      riskLevel: 'medium',
+      pricingCalculatorUrl: pricingUrl(provider),
+    });
+  }
+
+  // Serverless
+  for (const fn of spec.serverless) {
+    items.push({
+      id: `cost-serverless:${fn.id}`,
+      category: 'Serverless',
+      description: `Serverless function "${fn.name}" (${fn.kind}) charges per invocation and per GB-second of compute.`,
+      recommendation:
+        'Serverless is cost-effective for low traffic. Monitor invocation counts for high-traffic labs.',
+      affectedResource: fn.name,
+      riskLevel: 'low',
+      pricingCalculatorUrl: pricingUrl(provider),
+    });
+  }
+
+  // Containers
+  for (const ctr of spec.containers) {
+    items.push({
+      id: `cost-container:${ctr.id}`,
+      category: 'Container hosting',
+      description: `Container "${ctr.name}" (${ctr.kind}, ${ctr.cpu} CPU, ${ctr.memoryGb} GB) incurs compute charges while running.`,
+      recommendation:
+        'Stop or remove the container when not in use. Use the smallest CPU/memory that meets the lab needs.',
+      affectedResource: ctr.name,
+      riskLevel: 'medium',
+      pricingCalculatorUrl: pricingUrl(provider),
+    });
+  }
+
+  return items;
+}
+
 export function generateCostReview(spec: LabSpecification, model: InternalModel): CostReview {
   const items: CostReviewItem[] = [
     ...carryInlineCostFindings(model),
     ...analyseComputeCosts(spec),
     ...analyseStorageCosts(model),
     ...analyseDurationCosts(spec),
+    ...analyseAdvancedCosts(spec),
   ];
 
   // Deduplicate by id

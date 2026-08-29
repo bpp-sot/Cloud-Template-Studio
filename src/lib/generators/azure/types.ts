@@ -56,7 +56,9 @@ export interface AzureStorageAccountProps {
   name: string;
   apiVersion: string;
   sku: string;
-  purpose: 'boot-diagnostics';
+  purpose: 'boot-diagnostics' | 'general-purpose';
+  /** Only true when the author explicitly opted in to public blob access. */
+  allowBlobPublicAccess: boolean;
 }
 
 /** Intrinsic managed OS disk — part of the VM's storageProfile, never a standalone resource. */
@@ -93,6 +95,62 @@ export interface AzureVmProps {
   bootDiagnosticsStorageLogicalId: string | null;
 }
 
+// ── Phase 5: Advanced resource property bags ──
+
+export interface AzureManagedDiskProps {
+  kind: 'managedDisk';
+  name: string;
+  apiVersion: string;
+  sku: string;
+  diskSizeGb: number;
+  /** Logical id of the VM this disk is attached to, when applicable. */
+  attachedToVmLogicalId: string | null;
+}
+
+export interface AzureManagedIdentityProps {
+  kind: 'managedIdentity';
+  name: string;
+  apiVersion: string;
+  /** Purpose description from the spec. */
+  purpose: string;
+}
+
+export interface AzureAppServiceProps {
+  kind: 'appService';
+  name: string;
+  apiVersion: string;
+  runtime: string;
+  imageRef: string;
+  /** Whether a public endpoint is explicitly requested. */
+  publicEndpointRequested: boolean;
+  environmentVariables: Array<{ key: string; value: string }>;
+}
+
+export interface AzureFunctionProps {
+  kind: 'functionApp';
+  name: string;
+  apiVersion: string;
+  runtime: string;
+  handler: string;
+  codeArtifact: string;
+  memoryMb: number;
+  timeoutSeconds: number;
+  httpTriggerRequested: boolean;
+  environmentVariables: Array<{ key: string; value: string }>;
+}
+
+export interface AzureContainerInstanceProps {
+  kind: 'containerInstance';
+  name: string;
+  apiVersion: string;
+  image: string;
+  cpuCores: number;
+  memoryGb: number;
+  port: number;
+  publicEndpointRequested: boolean;
+  environmentVariables: Array<{ key: string; value: string }>;
+}
+
 export type AzureResourceProps =
   | AzureVnetProps
   | AzureNsgProps
@@ -100,4 +158,9 @@ export type AzureResourceProps =
   | AzureNicProps
   | AzureStorageAccountProps
   | AzureOsDiskProps
-  | AzureVmProps;
+  | AzureVmProps
+  | AzureManagedDiskProps
+  | AzureManagedIdentityProps
+  | AzureAppServiceProps
+  | AzureFunctionProps
+  | AzureContainerInstanceProps;

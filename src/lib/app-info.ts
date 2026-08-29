@@ -24,9 +24,9 @@ export const APP_INFO = {
   /** Organisation the product is built for. */
   organisation: 'BPP School of Technology',
   /** Application version. Bump this when releasing a new build. */
-  version: '0.2.0',
+  version: '0.3.0',
   /** Short human-readable build label, included next to the version. */
-  buildLabel: 'Phase 4 — Dedicated Reviews',
+  buildLabel: 'Phase 5/6 — Advanced Resources & Professional Mode',
 } as const;
 
 /** Convenience accessor for the version string, e.g. "v0.1.0". */

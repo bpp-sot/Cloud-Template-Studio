@@ -8,6 +8,11 @@
 import type { GeneratedResource, InternalModel, ParameterDef } from '@/types';
 import { APP_INFO } from '@/lib/app-info';
 import type {
+  AzureAppServiceProps,
+  AzureContainerInstanceProps,
+  AzureFunctionProps,
+  AzureManagedDiskProps,
+  AzureManagedIdentityProps,
   AzureNicProps,
   AzureNsgProps,
   AzurePublicIpProps,
@@ -24,6 +29,11 @@ const ARM_TYPE = {
   storageAccount: 'Microsoft.Storage/storageAccounts',
   nic: 'Microsoft.Network/networkInterfaces',
   vm: 'Microsoft.Compute/virtualMachines',
+  managedDisk: 'Microsoft.Compute/disks',
+  managedIdentity: 'Microsoft.ManagedIdentity/userAssignedIdentities',
+  appService: 'Microsoft.Web/sites',
+  functionApp: 'Microsoft.Web/sites',
+  containerInstance: 'Microsoft.ContainerInstance/containerGroups',
 } as const;
 
 function azureProps(r: GeneratedResource): AzureResourceProps | undefined {
@@ -126,7 +136,87 @@ function storageResource(p: AzureStorageAccountProps) {
     location: "[parameters('location')]",
     sku: { name: p.sku },
     kind: 'StorageV2',
-    properties: { allowBlobPublicAccess: false, minimumTlsVersion: 'TLS1_2' },
+    properties: { allowBlobPublicAccess: p.allowBlobPublicAccess, minimumTlsVersion: 'TLS1_2' },
+  };
+}
+
+function managedDiskResource(p: AzureManagedDiskProps) {
+  return {
+    type: ARM_TYPE.managedDisk,
+    apiVersion: p.apiVersion,
+    name: p.name,
+    location: "[parameters('location')]",
+    sku: { name: p.sku },
+    properties: { creationData: { createOption: 'Empty' }, diskSizeGB: p.diskSizeGb },
+  };
+}
+
+function managedIdentityResource(p: AzureManagedIdentityProps) {
+  return {
+    type: ARM_TYPE.managedIdentity,
+    apiVersion: p.apiVersion,
+    name: p.name,
+    location: "[parameters('location')]",
+  };
+}
+
+function appServiceResource(p: AzureAppServiceProps) {
+  return {
+    type: ARM_TYPE.appService,
+    apiVersion: p.apiVersion,
+    name: p.name,
+    location: "[parameters('location')]",
+    properties: {
+      siteConfig: { linuxFxVersion: `${p.runtime}|${p.imageRef}` },
+      appSettings: p.environmentVariables.map((e) => ({ name: e.key, value: e.value })),
+    },
+  };
+}
+
+function functionAppResource(p: AzureFunctionProps) {
+  return {
+    type: ARM_TYPE.functionApp,
+    apiVersion: p.apiVersion,
+    name: p.name,
+    location: "[parameters('location')]",
+    kind: 'functionApp',
+    properties: {
+      siteConfig: { linuxFxVersion: p.runtime },
+      appSettings: [
+        { name: 'FUNCTIONS_WORKER_RUNTIME', value: p.runtime },
+        ...p.environmentVariables.map((e) => ({ name: e.key, value: e.value })),
+      ],
+    },
+  };
+}
+
+function containerInstanceResource(p: AzureContainerInstanceProps) {
+  return {
+    type: ARM_TYPE.containerInstance,
+    apiVersion: p.apiVersion,
+    name: p.name,
+    location: "[parameters('location')]",
+    properties: {
+      osType: 'Linux',
+      containers: [
+        {
+          name: p.name,
+          properties: {
+            image: p.image,
+            resources: { requests: { cpu: p.cpuCores, memoryInGB: p.memoryGb } },
+            ports: [{ port: p.port, protocol: 'TCP' }],
+            environmentVariables: p.environmentVariables.map((e) => ({
+              name: e.key,
+              value: e.value,
+            })),
+          },
+        },
+      ],
+      ipAddress: {
+        type: p.publicEndpointRequested ? 'Public' : 'Private',
+        ports: [{ port: p.port, protocol: 'TCP' }],
+      },
+    },
   };
 }
 
@@ -248,6 +338,16 @@ function armResource(
       return nicResource(p, lookup, dependsOn);
     case 'vm':
       return vmResource(p, lookup, dependsOn);
+    case 'managedDisk':
+      return managedDiskResource(p);
+    case 'managedIdentity':
+      return managedIdentityResource(p);
+    case 'appService':
+      return appServiceResource(p);
+    case 'functionApp':
+      return functionAppResource(p);
+    case 'containerInstance':
+      return containerInstanceResource(p);
   }
 }
 
@@ -257,7 +357,7 @@ function armOutputValue(valueExpression: string): string {
   return `[${t}]`;
 }
 
-export function generateArmTemplate(model: InternalModel): string {
+export function generateArmTemplate(model: InternalModel, fragments: string[] = []): string {
   const lookup = buildLookup(model);
   const resources = model.resources
     .map((r) => armResource(r, lookup))
@@ -268,7 +368,7 @@ export function generateArmTemplate(model: InternalModel): string {
     outputs[o.name] = { type: 'string', value: armOutputValue(o.valueExpression) };
   }
 
-  const template = {
+  const template: Record<string, unknown> = {
     $schema: 'https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#',
     contentVersion: '1.0.0.0',
     metadata: {
@@ -280,6 +380,44 @@ export function generateArmTemplate(model: InternalModel): string {
     resources,
     outputs,
   };
+
+  // Phase 6: Inject custom fragments (Classification F) with boundary markers.
+  // Fragments are expected to be ARM JSON resource objects. They are parsed and
+  // added to the resources array with a _classification marker.
+  if (fragments.length > 0) {
+    const fragmentResources: Record<string, unknown>[] = [];
+    for (let i = 0; i < fragments.length; i++) {
+      const frag = fragments[i].trim();
+      try {
+        const parsed = JSON.parse(frag);
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            fragmentResources.push({
+              ...item,
+              _classification: 'F',
+              _fragmentIndex: i + 1,
+              _warning: 'User-supplied custom fragment — requires manual review',
+            });
+          }
+        } else {
+          fragmentResources.push({
+            ...parsed,
+            _classification: 'F',
+            _fragmentIndex: i + 1,
+            _warning: 'User-supplied custom fragment — requires manual review',
+          });
+        }
+      } catch {
+        // Non-JSON fragments are noted in metadata but not injected as resources.
+        fragmentResources.push({
+          _classification: 'F',
+          _fragmentIndex: i + 1,
+          _error: 'Fragment is not valid JSON and was not injected as a resource',
+        });
+      }
+    }
+    (template.resources as Record<string, unknown>[]).push(...fragmentResources);
+  }
 
   return JSON.stringify(template, null, 2) + '\n';
 }
