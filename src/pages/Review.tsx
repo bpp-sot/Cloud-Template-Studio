@@ -103,6 +103,11 @@ export default function Review() {
     downloadText(`${safeName}-validation-checklist.md`, md, 'text/markdown');
   };
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -135,35 +140,66 @@ export default function Review() {
         </div>
       </div>
 
-      {/* Jump menu — sticky in-page navigation */}
+      {/* Jump menu — sticky in-page navigation.
+          Uses scrollIntoView via onClick, NOT href anchors, because
+          HashRouter already uses the URL hash for routing. Anchor hrefs
+          like "#section-templates" would conflict with the router. */}
       <nav className="jump-menu" aria-label="Section navigation">
-        <a href="#section-templates" className="jump-menu-link">
+        <button
+          type="button"
+          className="jump-menu-link"
+          onClick={() => scrollToSection('section-templates')}
+        >
           Templates
-        </a>
-        <a href="#section-resources" className="jump-menu-link">
+        </button>
+        <button
+          type="button"
+          className="jump-menu-link"
+          onClick={() => scrollToSection('section-resources')}
+        >
           Resources
-        </a>
+        </button>
         {model && model.findings.length > 0 && (
-          <a href="#section-findings" className="jump-menu-link">
+          <button
+            type="button"
+            className="jump-menu-link"
+            onClick={() => scrollToSection('section-findings')}
+          >
             Findings ({model.findings.length})
-          </a>
+          </button>
         )}
         {model && model.parameters.length > 0 && (
-          <a href="#section-parameters" className="jump-menu-link">
+          <button
+            type="button"
+            className="jump-menu-link"
+            onClick={() => scrollToSection('section-parameters')}
+          >
             Parameters ({model.parameters.length})
-          </a>
+          </button>
         )}
         {model && model.outputs.length > 0 && (
-          <a href="#section-outputs" className="jump-menu-link">
+          <button
+            type="button"
+            className="jump-menu-link"
+            onClick={() => scrollToSection('section-outputs')}
+          >
             Outputs ({model.outputs.length})
-          </a>
+          </button>
         )}
-        <a href="#section-downloads" className="jump-menu-link">
+        <button
+          type="button"
+          className="jump-menu-link"
+          onClick={() => scrollToSection('section-downloads')}
+        >
           Downloads
-        </a>
-        <a href="#section-reviews" className="jump-menu-link">
+        </button>
+        <button
+          type="button"
+          className="jump-menu-link"
+          onClick={() => scrollToSection('section-reviews')}
+        >
           Dedicated Reviews
-        </a>
+        </button>
       </nav>
 
       {/* Generated Templates — first, as the primary output */}

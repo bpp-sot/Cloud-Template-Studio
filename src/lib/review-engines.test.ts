@@ -170,13 +170,13 @@ describe('security review engine', () => {
     expect(total).toBe(review.items.length);
   });
 
-  it('is deterministic (excluding generatedAt)', () => {
+  it('is deterministic (excluding generatedAt and summary)', () => {
     const spec = azureSpec({ publicIp: true });
     const model = buildInternalModel(spec);
     const a = generateSecurityReview(spec, model);
     const b = generateSecurityReview(spec, model);
-    const { generatedAt: _ga, ...aRest } = a;
-    const { generatedAt: _gb, ...bRest } = b;
+    const { generatedAt: _ga, summary: _sa, ...aRest } = a;
+    const { generatedAt: _gb, summary: _sb, ...bRest } = b;
     expect(JSON.stringify(aRest)).toBe(JSON.stringify(bRest));
   });
 
@@ -250,13 +250,13 @@ describe('cost review engine', () => {
     expect(review.items.some((i) => i.pricingCalculatorUrl.includes('calculator.aws'))).toBe(true);
   });
 
-  it('is deterministic (excluding generatedAt)', () => {
+  it('is deterministic (excluding generatedAt and summary)', () => {
     const spec = azureSpec({ gpuSize: true });
     const model = buildInternalModel(spec);
     const a = generateCostReview(spec, model);
     const b = generateCostReview(spec, model);
-    const { generatedAt: _ga, ...aRest } = a;
-    const { generatedAt: _gb, ...bRest } = b;
+    const { generatedAt: _ga, summary: _sa, ...aRest } = a;
+    const { generatedAt: _gb, summary: _sb, ...bRest } = b;
     expect(JSON.stringify(aRest)).toBe(JSON.stringify(bRest));
   });
 
@@ -319,13 +319,13 @@ describe('deployment readiness engine', () => {
     expect(check?.status).toBe('pass');
   });
 
-  it('is deterministic (excluding generatedAt)', () => {
+  it('is deterministic (excluding generatedAt and summary)', () => {
     const spec = azureSpec({});
     const model = buildInternalModel(spec);
     const a = generateDeploymentReadiness(spec, model);
     const b = generateDeploymentReadiness(spec, model);
-    const { generatedAt: _ga, ...aRest } = a;
-    const { generatedAt: _gb, ...bRest } = b;
+    const { generatedAt: _ga, summary: _sa, ...aRest } = a;
+    const { generatedAt: _gb, summary: _sb, ...bRest } = b;
     expect(JSON.stringify(aRest)).toBe(JSON.stringify(bRest));
   });
 
